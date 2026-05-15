@@ -530,20 +530,27 @@ async function saveCardToCloud() {
     const uploadData = await uploadRes.json();
 
     // 2. Save to Zilliz
-    const payload = {
-        collectionName: 'warpforge_community_cards',
-        data: [{
-            card_title: cardName,
-            art_url: uploadData.url, // URL to the raw source
-            // ... other fields ...
-            ui_config: JSON.stringify({
-                margins: cardMargins, // Your current tuning values
-                positions: statPositions,
-                rarity: document.getElementById('raritySelect').value
-            }),
-            dummy_vector: [0.1, 0.2]
-        }]
-    };
+const payload = {
+    collectionName: 'warpforge_community_cards',
+    data: [{
+        card_title: cardName,
+        art_url: uploadData.url,
+        faction: factionSelect.value,
+        type: typeSelect.value,
+        trait: document.getElementById('traitInput').value || "",
+        rules: document.getElementById('rulesInput').value || "",
+        stat_melee: parseInt(document.getElementById('stat1').value) || 0,
+        stat_ranged: parseInt(document.getElementById('stat2').value) || 0,
+        stat_health: parseInt(document.getElementById('stat3').value) || 0,
+        stat_special: parseInt(document.getElementById('stat4').value) || 0,
+        ui_config: JSON.stringify({
+            margins: cardMargins,
+            positions: statPositions,
+            rarity: document.getElementById('raritySelect').value
+        }),
+        dummy_vector: [0.1, 0.2]
+    }]
+};
 
     await syncToVault('save', payload);
 }
@@ -565,7 +572,7 @@ async function loadCardFromCloud() {
         if (d.art_url) {
             // If the card has art, update our global variable so it stays 
             // linked if we save the card again later.
-            currentCloudArtUrl = d.art_url; 
+            currentRawArtBase64 = d.art_url; 
             
             // Then draw it
             artImage.onload = drawCard;
@@ -573,7 +580,7 @@ async function loadCardFromCloud() {
         } else {
             // If no art was found, clear the old art so we don't accidentally
             // save the previous card's art onto this one!
-            currentCloudArtUrl = "";
+            currentRawArtBase64 = "";
             artImage.src = ""; // Clear the canvas area for art
             drawCard();
         }
