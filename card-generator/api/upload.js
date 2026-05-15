@@ -10,7 +10,11 @@ cloudinary.config({
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { image, cardName } = req.body;
+    const { image, cardName, auth } = req.body;
+
+    if (!auth || !(await verifyUser(auth.user, auth.pass))) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
 
     if (!image || !cardName) {
         return res.status(400).json({ error: 'Missing image or card name' });
@@ -35,4 +39,25 @@ export default async function handler(req, res) {
         console.error("Cloudinary Error:", error);
         return res.status(500).json({ error: 'Upload failed', detail: error.message });
     }
+}
+
+async function verifyUser(username, password) {
+    const ZILLIZ_ENDPOINT = process.env.ZILLIZ_ENDPOINT;
+    const ZILLIZ_TOKEN = process.env.ZILLIZ_TOKEN;
+
+    const response = await fetch(`${ZILLIZ_ENDPOINT.replace(/\/$/, "")}/v2/vectordb/entities/query`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${ZILLIZ_TOKEN}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            collectionName: 'users',
+            filter: `username == '${username}' && password == '${password}'`,
+            outputFields: ["username"]
+        })
+    });
+
+    const result = await response.json();
+    return result.data && result.data.length > 0;
 }

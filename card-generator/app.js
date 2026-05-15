@@ -96,6 +96,7 @@ let statPositions = {
 function init() {
     setupMarginSliders();
     setupStatSliders();
+    setupAuthListeners();
     applyTypeDefaults();
     updateRarityImage();
     updateFilters();
@@ -288,6 +289,27 @@ function setupStatSliders() {
                 drawCard();
             });
         });
+    });
+}
+
+function setupAuthListeners() {
+    const authInputs = ['vaultUser', 'vaultPass'];
+    const saveBtn = document.getElementById('saveBtn'); // Ensure these IDs match your HTML
+    const loadBtn = document.getElementById('loadBtn');
+
+    authInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.oninput = () => {
+                const user = document.getElementById('vaultUser').value.trim();
+                const pass = document.getElementById('vaultPass').value.trim();
+                const hasCreds = user !== "" && pass !== "";
+                
+                // Toggle visibility
+                saveBtn.style.display = hasCreds ? 'block' : 'none';
+                loadBtn.style.display = hasCreds ? 'block' : 'none';
+            };
+        }
     });
 }
 
@@ -513,8 +535,18 @@ async function syncToVault(action, payload) {
     const response = await fetch('/api/vault', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, payload })
+        body: JSON.stringify({ 
+            action, 
+            payload, 
+            auth: getAuth() // Attach credentials
+        })
     });
+    
+    if (response.status === 401) {
+        alert("Invalid Username or Password. Access Denied.");
+        throw new Error("Unauthorized");
+    }
+    
     return await response.json();
 }
 
@@ -527,8 +559,12 @@ async function saveCardToCloud() {
     // 1. Upload the RAW ORIGINAL art, not the canvas
     const uploadRes = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: currentRawArtBase64, cardName: cardName })
+        headers: { 'Content-Type': 'application/json', },
+        body: JSON.stringify({
+            image: currentRawArtBase64,
+            cardName: cardName,
+            auth: getAuth()
+        })
     });
     const uploadData = await uploadRes.json();
 
@@ -678,6 +714,14 @@ function updateSliderDisplays() {
             }
         });
     });
+}
+
+// Helper to get auth object
+function getAuth() {
+    return {
+        user: document.getElementById('vaultUser').value,
+        pass: document.getElementById('vaultPass').value
+    };
 }
 
 init();

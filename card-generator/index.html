@@ -193,13 +193,20 @@
                 <input type="range" id="rightSlider" min="0" max="40" value="8">
             </div>
 
+
+
+            
         <div class="control-group cloud-section">
             <h3>Cloud Vault</h3>
+            <div class="auth-box">
+                <input type="text" id="vaultUser" placeholder="Username">
+                <input type="password" id="vaultPass" placeholder="Password">
+            </div>
             <div class="button-row" style="display: flex; gap: 10px; margin-top: 10px;">
-                <button id="saveCloudBtn" onclick="saveCardToCloud()" class="primary-btn" style="background-color: #43b581; flex: 1;">
+                <button id="saveBtn" style="display: none;" onclick="saveCardToCloud()" class="primary-btn" style="background-color: #43b581; flex: 1;">
                     Save to Cloud
                 </button>
-                <button id="loadCloudBtn" onclick="loadCardFromCloud()" class="primary-btn" style="background-color: #faa61a; flex: 1;">
+                <button id="loadBtn" style="display: none;" onclick="loadCardFromCloud()" class="primary-btn" style="background-color: #faa61a; flex: 1;">
                     Load by Name
                 </button>
             </div>
