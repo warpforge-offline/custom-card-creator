@@ -537,47 +537,48 @@ async function syncToVault(action, payload) {
 
 async function saveCardToCloud() {
     const cardName = document.getElementById('cardNameInput').value;
-    const artBase64 = artImage.src; // This is the dataURL from the preview
-
-    if (!cardName || cardName === "New Card") {
-        return alert("Please enter a valid card name first.");
-    }
-
-    console.log("Uploading art and saving card...");
+    if (!cardName || cardName === "New Card") return alert("Please enter a card name.");
 
     try {
-        // 1. Upload to Cloudinary (Signed via Vercel)
+        // Step 1: Upload Art to Cloudinary via your new upload.js
+        const artBase64 = canvas.toDataURL('image/png'); 
         const uploadRes = await fetch('/api/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                image: artBase64, 
-                cardName: cardName 
-            })
+            body: JSON.stringify({ image: artBase64, cardName: cardName })
         });
-        
         const uploadData = await uploadRes.json();
-        
-        if (!uploadData.url) throw new Error("Upload failed: " + uploadData.error);
+        if (!uploadData.url) throw new Error("Art upload failed");
 
-        // 2. Save everything to Zilliz
+        // Step 2: Save metadata to Zilliz via vault.js
         const payload = {
             collectionName: 'warpforge_community_cards',
             data: [{
                 card_title: cardName,
-                art_url: uploadData.url, // The permanent link
+                art_url: uploadData.url, // From Cloudinary
+                frame_path: `assets/frames/${factionSelect.value}/${typeSelect.value}_${variantSelect.value}.png`,
                 faction: factionSelect.value,
-                // ... rest of your existing payload ...
+                type: typeSelect.value,
+                trait: document.getElementById('traitInput').value,
+                rules: document.getElementById('rulesInput').value,
+                stat_melee: parseInt(document.getElementById('stat1').value) || 0,
+                stat_ranged: parseInt(document.getElementById('stat2').value) || 0,
+                stat_health: parseInt(document.getElementById('stat3').value) || 0,
+                stat_special: parseInt(document.getElementById('stat4').value) || 0,
+                ui_config: JSON.stringify({
+                    margins: cardMargins,
+                    positions: statPositions,
+                    rarity: document.getElementById('raritySelect').value
+                }),
                 dummy_vector: [0.1, 0.2]
             }]
         };
 
         const result = await syncToVault('save', payload);
         if (result.code === 0) alert("Card Vaulted Successfully!");
-        
     } catch (err) {
         console.error(err);
-        alert("Vaulting failed. Check console.");
+        alert("Save failed: " + err.message);
     }
 }
 
