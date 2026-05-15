@@ -1,0 +1,15 @@
+{
+  "name": "warpforge-card-vault",
+  "version": "1.0.0",
+  "description": "Community card creator for Warpforge with Cloudinary and Zilliz integration",
+  "main": "index.html",
+  "scripts": {
+    "start": "servor card-generator"
+  },
+  "dependencies": {
+    "cloudinary": "^2.2.0"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}

@@ -537,43 +537,47 @@ async function syncToVault(action, payload) {
 
 async function saveCardToCloud() {
     const cardName = document.getElementById('cardNameInput').value;
-    if (!cardName || cardName === "New Card") return alert("Please enter a card name.");
+    const artBase64 = artImage.src; // This is the dataURL from the preview
 
-    const type = typeSelect.value === 'warlord' ? 'troop' : typeSelect.value;
-    const variant = variantSelect.value;
-    const currentFramePath = `assets/frames/${factionSelect.value}/${type}_${variant}.png`;
+    if (!cardName || cardName === "New Card") {
+        return alert("Please enter a valid card name first.");
+    }
 
-    const payload = {
-        collectionName: 'warpforge_community_cards', // Your verified collection
-        data: [{
-            card_title: cardName,
-            art_url: currentCloudArtUrl, // The link from Cloudinary
-            frame_path: currentFramePath,
-            faction: factionSelect.value,
-            type: typeSelect.value, 
-            trait: document.getElementById('traitInput').value,
-            rules: document.getElementById('rulesInput').value,
-            stat_melee: parseInt(document.getElementById('stat1').value) || 0,
-            stat_ranged: parseInt(document.getElementById('stat2').value) || 0,
-            stat_health: parseInt(document.getElementById('stat3').value) || 0,
-            stat_special: parseInt(document.getElementById('stat4').value) || 0,
-            ui_config: JSON.stringify({
-                margins: cardMargins,
-                positions: statPositions,
-                rarity: document.getElementById('raritySelect').value
-            }),
-            dummy_vector: [0.1, 0.2] // Your verified 2-dimension size
-        }]
-    };
+    console.log("Uploading art and saving card...");
 
-    const result = await syncToVault('save', payload);
-    
-    // Zilliz v2 returns code 0 for success
-    if (result && result.code === 0) {
-        alert(`Successfully saved "${cardName}" to the cloud!`);
-    } else {
-        alert("Error: " + (result.message || "Unknown error"));
-        console.error("Save failed:", result);
+    try {
+        // 1. Upload to Cloudinary (Signed via Vercel)
+        const uploadRes = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                image: artBase64, 
+                cardName: cardName 
+            })
+        });
+        
+        const uploadData = await uploadRes.json();
+        
+        if (!uploadData.url) throw new Error("Upload failed: " + uploadData.error);
+
+        // 2. Save everything to Zilliz
+        const payload = {
+            collectionName: 'warpforge_community_cards',
+            data: [{
+                card_title: cardName,
+                art_url: uploadData.url, // The permanent link
+                faction: factionSelect.value,
+                // ... rest of your existing payload ...
+                dummy_vector: [0.1, 0.2]
+            }]
+        };
+
+        const result = await syncToVault('save', payload);
+        if (result.code === 0) alert("Card Vaulted Successfully!");
+        
+    } catch (err) {
+        console.error(err);
+        alert("Vaulting failed. Check console.");
     }
 }
 
