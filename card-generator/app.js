@@ -439,33 +439,16 @@ statToggles.forEach(toggle => {
     });
 });
 
-let currentCloudArtUrl = ""; // Track the URL globally
+// Ensure this variable name matches what your save function uses
+let currentRawArtBase64 = ""; 
 
-// Inside your artInput.onchange
 document.getElementById('artInput').onchange = (e) => {
     const file = e.target.files[0];
     const reader = new FileReader();
-    
-    reader.onload = async (event) => {
-        const base64 = event.target.result;
-        
-        // 1. Update Canvas immediately for the user
+    reader.onload = (event) => {
+        currentRawArtBase64 = event.target.result; // Update this specific variable
         artImage.onload = drawCard;
-        artImage.src = base64;
-
-        // 2. Fire and forget the upload to Cloudinary
-        console.log("Uploading to Cloudinary...");
-        const response = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64 })
-        });
-        
-        const result = await response.json();
-        if (result.url) {
-            currentCloudArtUrl = result.url;
-            console.log("Cloud Art saved:", currentCloudArtUrl);
-        }
+        artImage.src = currentRawArtBase64;
     };
     reader.readAsDataURL(file);
 };
@@ -537,49 +520,32 @@ async function syncToVault(action, payload) {
 
 async function saveCardToCloud() {
     const cardName = document.getElementById('cardNameInput').value;
-    if (!cardName || cardName === "New Card") return alert("Please enter a card name.");
+    
+    // 1. Upload the RAW ORIGINAL art, not the canvas
+    const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: currentRawArtBase64, cardName: cardName })
+    });
+    const uploadData = await uploadRes.json();
 
-    try {
-        // Step 1: Upload Art to Cloudinary via your new upload.js
-        const artBase64 = canvas.toDataURL('image/png'); 
-        const uploadRes = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: artBase64, cardName: cardName })
-        });
-        const uploadData = await uploadRes.json();
-        if (!uploadData.url) throw new Error("Art upload failed");
+    // 2. Save to Zilliz
+    const payload = {
+        collectionName: 'warpforge_community_cards',
+        data: [{
+            card_title: cardName,
+            art_url: uploadData.url, // URL to the raw source
+            // ... other fields ...
+            ui_config: JSON.stringify({
+                margins: cardMargins, // Your current tuning values
+                positions: statPositions,
+                rarity: document.getElementById('raritySelect').value
+            }),
+            dummy_vector: [0.1, 0.2]
+        }]
+    };
 
-        // Step 2: Save metadata to Zilliz via vault.js
-        const payload = {
-            collectionName: 'warpforge_community_cards',
-            data: [{
-                card_title: cardName,
-                art_url: uploadData.url, // From Cloudinary
-                frame_path: `assets/frames/${factionSelect.value}/${typeSelect.value}_${variantSelect.value}.png`,
-                faction: factionSelect.value,
-                type: typeSelect.value,
-                trait: document.getElementById('traitInput').value,
-                rules: document.getElementById('rulesInput').value,
-                stat_melee: parseInt(document.getElementById('stat1').value) || 0,
-                stat_ranged: parseInt(document.getElementById('stat2').value) || 0,
-                stat_health: parseInt(document.getElementById('stat3').value) || 0,
-                stat_special: parseInt(document.getElementById('stat4').value) || 0,
-                ui_config: JSON.stringify({
-                    margins: cardMargins,
-                    positions: statPositions,
-                    rarity: document.getElementById('raritySelect').value
-                }),
-                dummy_vector: [0.1, 0.2]
-            }]
-        };
-
-        const result = await syncToVault('save', payload);
-        if (result.code === 0) alert("Card Vaulted Successfully!");
-    } catch (err) {
-        console.error(err);
-        alert("Save failed: " + err.message);
-    }
+    await syncToVault('save', payload);
 }
 
 async function loadCardFromCloud() {
@@ -591,18 +557,11 @@ async function loadCardFromCloud() {
         outputFields: ["*"]
     });
 
+
     if (result && result.data && result.data.length > 0) {
         const d = result.data[0];
-        
-        // Populate text fields
-        document.getElementById('traitInput').value = d.trait;
-        document.getElementById('rulesInput').value = d.rules;
-        document.getElementById('stat1').value = d.stat_melee;
-        document.getElementById('stat2').value = d.stat_ranged;
-        document.getElementById('stat3').value = d.stat_health;
-        document.getElementById('stat4').value = d.stat_special;
 
-        // Download the art from cloud
+        // Inside loadCardFromCloud after receiving 'd'
         if (d.art_url) {
             // If the card has art, update our global variable so it stays 
             // linked if we save the card again later.
@@ -618,6 +577,14 @@ async function loadCardFromCloud() {
             artImage.src = ""; // Clear the canvas area for art
             drawCard();
         }
+
+        // Populate text fields
+        document.getElementById('traitInput').value = d.trait;
+        document.getElementById('rulesInput').value = d.rules;
+        document.getElementById('stat1').value = d.stat_melee;
+        document.getElementById('stat2').value = d.stat_ranged;
+        document.getElementById('stat3').value = d.stat_health;
+        document.getElementById('stat4').value = d.stat_special;
 
         // Restore visual state
         const config = JSON.parse(d.ui_config);
