@@ -73,7 +73,13 @@ const galleryContainer = document.getElementById('frameGallery');
 
 // --- State ---
 let artImage = new Image();
+artImage.crossOrigin = "anonymous";
+
 let frameImage = new Image();
+// If  frame images ever move to a cloud bucket or external host
+// uncomment the following line, too:
+// frameImage.crossOrigin = "anonymous";
+
 let activeFramePath = "";
 
 let statBgImage = new Image();
@@ -469,9 +475,15 @@ let currentRawArtBase64 = "";
 
 document.getElementById('artInput').onchange = (e) => {
     const file = e.target.files[0];
+    if (!file) return;
+    
     const reader = new FileReader();
     reader.onload = (event) => {
-        currentRawArtBase64 = event.target.result; // Update this specific variable
+        currentRawArtBase64 = event.target.result;
+        
+        // Reset crossOrigin to null for local data URLs so it doesn't conflict
+        artImage.removeAttribute('crossOrigin'); 
+        
         artImage.onload = drawCard;
         artImage.src = currentRawArtBase64;
     };
@@ -684,7 +696,10 @@ async function loadCardFromCloud() {
 
         // Restore Raw Image Asset from Cloudinary
         if (d.art_url) {
-            currentRawArtBase64 = d.art_url; 
+            currentRawArtBase64 = d.art_url;
+
+            // Explicitly enforce anonymous CORS right before fetching from Cloudinary
+            artImage.crossOrigin = "anonymous";
             artImage.onload = drawCard;
             artImage.src = d.art_url; 
         } else {
