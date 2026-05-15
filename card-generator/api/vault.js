@@ -1,12 +1,16 @@
-// api/vault.js
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const { action, payload } = req.body;
-    const ZILLIZ_ENDPOINT = process.env.ZILLIZ_ENDPOINT;
+    const ZILLIZ_ENDPOINT = process.env.ZILLIZ_ENDPOINT; // e.g. https://in03...zilliz.com
     const ZILLIZ_TOKEN = process.env.ZILLIZ_TOKEN;
 
-    const zillizUrl = action === 'save' ? `${ZILLIZ_ENDPOINT}/upsert` : `${ZILLIZ_ENDPOINT}/query`;
+    const baseUrl = ZILLIZ_ENDPOINT.replace(/\/$/, "");
+    
+    // Updated for Zilliz v2 entity routes based on your successful test
+    const zillizUrl = action === 'save' 
+        ? `${baseUrl}/v2/vectordb/entities/insert` 
+        : `${baseUrl}/v2/vectordb/entities/query`;
 
     try {
         const response = await fetch(zillizUrl, {
@@ -21,6 +25,6 @@ export default async function handler(req, res) {
         const data = await response.json();
         return res.status(200).json(data);
     } catch (error) {
-        return res.status(500).json({ error: 'Cloud Sync Failed' });
+        return res.status(500).json({ error: 'Cloud Sync Failed', details: error.message });
     }
 }

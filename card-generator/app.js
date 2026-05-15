@@ -515,43 +515,42 @@ async function syncToVault(action, payload) {
 
 async function saveCardToCloud() {
     const cardName = document.getElementById('cardNameInput').value;
-    if (!cardName || cardName === "New Card") {
-        return alert("Please enter a unique Card Name before saving.");
-    }
+    if (!cardName || cardName === "New Card") return alert("Please enter a card name.");
 
     const type = typeSelect.value === 'warlord' ? 'troop' : typeSelect.value;
     const variant = variantSelect.value;
     const currentFramePath = `assets/frames/${factionSelect.value}/${type}_${variant}.png`;
 
     const payload = {
-        collectionName: 'CardCollection',
+        collectionName: 'warpforge_community_cards', // Your verified collection
         data: [{
             card_title: cardName,
             frame_path: currentFramePath,
             faction: factionSelect.value,
-            type: typeSelect.value, // Save the actual type (including 'warlord')
+            type: typeSelect.value, 
             trait: document.getElementById('traitInput').value,
             rules: document.getElementById('rulesInput').value,
-            stat_melee: parseInt(document.getElementById('stat1').value),
-            stat_ranged: parseInt(document.getElementById('stat2').value),
-            stat_health: parseInt(document.getElementById('stat3').value),
-            stat_special: parseInt(document.getElementById('stat4').value),
-            // THE MAGIC: Save ALL offsets, margins, and rarity as one string
+            stat_melee: parseInt(document.getElementById('stat1').value) || 0,
+            stat_ranged: parseInt(document.getElementById('stat2').value) || 0,
+            stat_health: parseInt(document.getElementById('stat3').value) || 0,
+            stat_special: parseInt(document.getElementById('stat4').value) || 0,
             ui_config: JSON.stringify({
                 margins: cardMargins,
                 positions: statPositions,
                 rarity: document.getElementById('raritySelect').value
             }),
-            dummy_vector: [0.1, 0.2, 0.3, 0.4] 
+            dummy_vector: [0.1, 0.2] // Your verified 2-dimension size
         }]
     };
 
     const result = await syncToVault('save', payload);
-    if (result?.code === 200) {
-        alert(`Successfully vaulted "${cardName}"!`);
+    
+    // Zilliz v2 returns code 0 for success
+    if (result && result.code === 0) {
+        alert(`Successfully saved "${cardName}" to the cloud!`);
     } else {
-        alert("Error saving to cloud. Check console.");
-        console.error(result);
+        alert("Error: " + (result.message || "Unknown error"));
+        console.error("Save failed:", result);
     }
 }
 
@@ -559,19 +558,15 @@ async function loadCardFromCloud() {
     const cardName = document.getElementById('cardNameInput').value;
 
     const result = await syncToVault('load', {
-        collectionName: 'CardCollection',
+        collectionName: 'warpforge_community_cards',
         filter: `card_title == '${cardName}'`,
         outputFields: ["*"]
     });
 
-    if (result?.data?.length > 0) {
+    if (result && result.data && result.data.length > 0) {
         const d = result.data[0];
         
-        // 1. Restore Dropdowns
-        factionSelect.value = d.faction;
-        typeSelect.value = d.type;
-
-        // 2. Restore Text Inputs
+        // Populate text fields
         document.getElementById('traitInput').value = d.trait;
         document.getElementById('rulesInput').value = d.rules;
         document.getElementById('stat1').value = d.stat_melee;
@@ -579,25 +574,22 @@ async function loadCardFromCloud() {
         document.getElementById('stat3').value = d.stat_health;
         document.getElementById('stat4').value = d.stat_special;
 
-        // 3. Restore Visual Config (Offsets & Margins)
+        // Restore visual state
         const config = JSON.parse(d.ui_config);
         cardMargins = config.margins;
         statPositions = config.positions;
         document.getElementById('raritySelect').value = config.rarity;
 
-        // 4. Update Sliders UI so the bars match the restored values
+        // Re-render everything
         updateSliderDisplays(); 
-
-        // 5. Trigger update chain (Order matters here!)
         updateRarityImage();
-        updateFilters(); // This rebuilds the gallery for the correct faction/type
+        updateFilters(); 
         loadFrame(d.frame_path); 
         applyTypeDefaults();
         
-        // Final draw is usually triggered by loadFrame's onload
         alert(`Loaded "${cardName}" successfully.`);
     } else {
-        alert("No card found with that exact name in the vault.");
+        alert("Card not found in the vault.");
     }
 }
 
