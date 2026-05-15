@@ -20,9 +20,11 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Missing image or card name' });
     }
 
-    // Create a unique but consistent ID from the card name
-    // e.g., "Twin Succubus" -> "twin_succubus"
-    const publicId = cardName.toLowerCase().trim().replace(/\s+/g, '_');
+    const safeCardName = cardName.toLowerCase().trim().replace(/\s+/g, '_');
+    const safeUserName = auth.user.toLowerCase().trim().replace(/\s+/g, '_');
+
+    // Creates a unique ID like: "twin_succubus_player1"
+    const publicId = `${safeCardName}_${safeUserName}`;
 
     try {
         const uploadResponse = await cloudinary.uploader.upload(image, {

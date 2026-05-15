@@ -478,7 +478,23 @@ document.getElementById('artInput').onchange = (e) => {
     reader.readAsDataURL(file);
 };
 
-document.getElementById('cardNameInput').oninput = drawCard;
+// --- Two-Way Name Synchronization for both fields CardName ---
+const mainNameInput = document.getElementById('cardNameInput');
+const vaultNameInput = document.getElementById('vaultCardName'); // The new one
+
+// When the top input changes -> update the bottom one and draw
+mainNameInput.addEventListener('input', (e) => {
+    if (vaultNameInput) vaultNameInput.value = e.target.value;
+    drawCard();
+});
+
+// When the bottom input changes -> update the top one and draw
+if (vaultNameInput) {
+    vaultNameInput.addEventListener('input', (e) => {
+        mainNameInput.value = e.target.value;
+        drawCard();
+    });
+}
 
 factionSelect.addEventListener('change', () => updateFilters());
 
@@ -573,6 +589,7 @@ const payload = {
     collectionName: 'warpforge_community_cards',
     data: [{
         card_title: cardName,
+        username: getAuth().user,
         art_url: uploadData.url,
         frame_path: activeFramePath,
         faction: factionSelect.value,
@@ -597,10 +614,11 @@ const payload = {
 
 async function loadCardFromCloud() {
     const cardName = document.getElementById('cardNameInput').value;
+    const currentUser = getAuth().user; // Grab the active user
 
     const result = await syncToVault('load', {
         collectionName: 'warpforge_community_cards',
-        filter: `card_title == '${cardName}'`,
+        filter: `card_title == '${cardName}' && username == '${currentUser}'`,
         outputFields: ["*"]
     });
 
@@ -638,7 +656,8 @@ async function loadCardFromCloud() {
                     updateActiveThumbnail(thumb);
                 }
             });
-}
+        }
+
         // 4. Restore Visual Metadata Configurations
         const config = JSON.parse(d.ui_config);
         cardMargins = config.margins;
