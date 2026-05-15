@@ -101,15 +101,14 @@ function init() {
     updateRarityImage();
     updateFilters();
 }
-function updateFilters() {
+
+function updateFilters(selectedVariantKey = null) {
     const faction = factionSelect.value;
     const type = typeSelect.value === 'warlord' ? 'troop' : typeSelect.value;
     const variants = frameLibrary[faction][type];
     
     variantSelect.innerHTML = '';
     galleryContainer.innerHTML = '';
-
-    // dummy comment
 
     variants.forEach(v => {
         const vKey = v.toLowerCase().replace(/\s+/g, '_');
@@ -133,7 +132,8 @@ function updateFilters() {
         galleryContainer.appendChild(thumb);
     });
 
-    if (variants.length > 0) {
+    // FIX: Only click the default first option if we AREN'T loading a specific saved card variant
+    if (variants.length > 0 && !selectedVariantKey) {
         galleryContainer.firstChild.click();
     }
 }
@@ -616,23 +616,28 @@ async function loadCardFromCloud() {
         document.getElementById('stat3').value = d.stat_health;
         document.getElementById('stat4').value = d.stat_special;
 
+        // Extract variant info cleanly out of the frame path string early
+        let savedVariantPart = null;
+        if (d.frame_path) {
+            savedVariantPart = d.frame_path.split('_').pop().replace('.png', '');
+        }
+
         // 2. Rebuild UI Layout (Dropdowns and Thumbnails) Exactly Once
-        updateFilters();
+        updateFilters(savedVariantPart);
 
         // 3. Force Variant Dropdown Selection & Sync Active Thumbnail
-        if (d.frame_path) {
-            const variantPart = d.frame_path.split('_').pop().replace('.png', '');
-            variantSelect.value = variantPart;
+        if (d.frame_path && savedVariantPart) {
+            variantSelect.value = savedVariantPart;
 
-            // Loop through the fresh gallery thumbnails to highlight the saved variant
+            // Loop through the fresh gallery thumbnails to highlight the saved variant matching your database path
             const allThumbs = document.querySelectorAll('.thumbnail');
             allThumbs.forEach(thumb => {
-                if (thumb.src.includes(d.frame_path)) {
+                // Normalize URLs or use a safe partial match check
+                if (thumb.getAttribute('src') === d.frame_path || thumb.src.includes(d.frame_path)) {
                     updateActiveThumbnail(thumb);
                 }
             });
-        }
-
+}
         // 4. Restore Visual Metadata Configurations
         const config = JSON.parse(d.ui_config);
         cardMargins = config.margins;
