@@ -520,6 +520,9 @@ async function syncToVault(action, payload) {
 
 async function saveCardToCloud() {
     const cardName = document.getElementById('cardNameInput').value;
+
+    // Capture the current frame path from the image object
+    const currentFramePath = frameImage.getAttribute('src');
     
     // 1. Upload the RAW ORIGINAL art, not the canvas
     const uploadRes = await fetch('/api/upload', {
@@ -564,28 +567,12 @@ async function loadCardFromCloud() {
         outputFields: ["*"]
     });
 
-
     if (result && result.data && result.data.length > 0) {
         const d = result.data[0];
 
-        // Inside loadCardFromCloud after receiving 'd'
-        if (d.art_url) {
-            // If the card has art, update our global variable so it stays 
-            // linked if we save the card again later.
-            currentRawArtBase64 = d.art_url; 
-            
-            // Then draw it
-            artImage.onload = drawCard;
-            artImage.src = d.art_url; 
-        } else {
-            // If no art was found, clear the old art so we don't accidentally
-            // save the previous card's art onto this one!
-            currentRawArtBase64 = "";
-            artImage.src = ""; // Clear the canvas area for art
-            drawCard();
-        }
-
-        // Populate text fields
+        // 1. Sync Base Global State & HTML Text Inputs
+        factionSelect.value = d.faction;
+        typeSelect.value = d.type;
         document.getElementById('traitInput').value = d.trait;
         document.getElementById('rulesInput').value = d.rules;
         document.getElementById('stat1').value = d.stat_melee;
@@ -593,18 +580,63 @@ async function loadCardFromCloud() {
         document.getElementById('stat3').value = d.stat_health;
         document.getElementById('stat4').value = d.stat_special;
 
-        // Restore visual state
+        // 2. Rebuild UI Layout (Dropdowns and Thumbnails) Exactly Once
+        updateFilters();
+
+        // 3. Force Variant Dropdown Selection & Sync Active Thumbnail
+        if (d.frame_path) {
+            const variantPart = d.frame_path.split('_').pop().replace('.png', '');
+            variantSelect.value = variantPart;
+
+            // Loop through the fresh gallery thumbnails to highlight the saved variant
+            const allThumbs = document.querySelectorAll('.thumbnail');
+            allThumbs.forEach(thumb => {
+                if (thumb.src.includes(d.frame_path)) {
+                    updateActiveThumbnail(thumb);
+                }
+            });
+        }
+
+        // 4. Restore Visual Metadata Configurations
         const config = JSON.parse(d.ui_config);
         cardMargins = config.margins;
         statPositions = config.positions;
         document.getElementById('raritySelect').value = config.rarity;
 
-        // Re-render everything
-        updateSliderDisplays(); 
-        updateRarityImage();
-        updateFilters(); 
-        loadFrame(d.frame_path); 
-        applyTypeDefaults();
+        // 5. Explicit Visibility Sync (Handles Warlord/Troop/Stratagem toggle structures)
+        const isTroop = d.type === 'troop' || d.type === 'warlord';
+        const hasEnergy = d.type === 'troop' || d.type === 'stratagem';
+
+        document.getElementById('meleeToggle').checked = isTroop;
+        document.getElementById('rangedToggle').checked = isTroop;
+        document.getElementById('healthToggle').checked = isTroop;
+        document.getElementById('energyToggle').checked = hasEnergy;
+
+        document.getElementById('meleeControlsContainer').style.display = isTroop ? 'block' : 'none';
+        document.getElementById('rangedControlsContainer').style.display = isTroop ? 'block' : 'none';
+        document.getElementById('healthControlsContainer').style.display = isTroop ? 'block' : 'none';
+        document.getElementById('energyControlsContainer').style.display = hasEnergy ? 'block' : 'none';
+
+        // 6. Asynchronously Load Assets to Draw to Canvas 
+        updateSliderDisplays();
+        updateRarityImage(); // Updates rarity background source, triggers load + draw
+
+        // Restore Raw Image Asset from Cloudinary
+        if (d.art_url) {
+            currentRawArtBase64 = d.art_url; 
+            artImage.onload = drawCard;
+            artImage.src = d.art_url; 
+        } else {
+            currentRawArtBase64 = "";
+            artImage.src = ""; 
+        }
+
+        // Finally, load the frame asset (resizes canvas and draws final image sequence)
+        if (d.frame_path) {
+            loadFrame(d.frame_path); 
+        } else {
+            drawCard();
+        }
         
         alert(`Loaded "${cardName}" successfully.`);
     } else {
