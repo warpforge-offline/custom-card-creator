@@ -439,13 +439,35 @@ statToggles.forEach(toggle => {
     });
 });
 
+let currentCloudArtUrl = ""; // Track the URL globally
+
+// Inside your artInput.onchange
 document.getElementById('artInput').onchange = (e) => {
+    const file = e.target.files[0];
     const reader = new FileReader();
-    reader.onload = (event) => {
+    
+    reader.onload = async (event) => {
+        const base64 = event.target.result;
+        
+        // 1. Update Canvas immediately for the user
         artImage.onload = drawCard;
-        artImage.src = event.target.result;
+        artImage.src = base64;
+
+        // 2. Fire and forget the upload to Cloudinary
+        console.log("Uploading to Cloudinary...");
+        const response = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64 })
+        });
+        
+        const result = await response.json();
+        if (result.url) {
+            currentCloudArtUrl = result.url;
+            console.log("Cloud Art saved:", currentCloudArtUrl);
+        }
     };
-    reader.readAsDataURL(e.target.files[0]);
+    reader.readAsDataURL(file);
 };
 
 document.getElementById('cardNameInput').oninput = drawCard;
@@ -525,6 +547,7 @@ async function saveCardToCloud() {
         collectionName: 'warpforge_community_cards', // Your verified collection
         data: [{
             card_title: cardName,
+            art_url: currentCloudArtUrl, // The link from Cloudinary
             frame_path: currentFramePath,
             faction: factionSelect.value,
             type: typeSelect.value, 
@@ -573,6 +596,23 @@ async function loadCardFromCloud() {
         document.getElementById('stat2').value = d.stat_ranged;
         document.getElementById('stat3').value = d.stat_health;
         document.getElementById('stat4').value = d.stat_special;
+
+        // Download the art from cloud
+        if (d.art_url) {
+            // If the card has art, update our global variable so it stays 
+            // linked if we save the card again later.
+            currentCloudArtUrl = d.art_url; 
+            
+            // Then draw it
+            artImage.onload = drawCard;
+            artImage.src = d.art_url; 
+        } else {
+            // If no art was found, clear the old art so we don't accidentally
+            // save the previous card's art onto this one!
+            currentCloudArtUrl = "";
+            artImage.src = ""; // Clear the canvas area for art
+            drawCard();
+        }
 
         // Restore visual state
         const config = JSON.parse(d.ui_config);
