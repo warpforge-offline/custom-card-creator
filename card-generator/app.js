@@ -667,7 +667,7 @@ async function loadCardFromCloud() {
         });
 
         if (result && result.data && result.data.length > 0) {
-            const d = d = result.data[0];
+            const d = result.data[0];
 
             // 1. Sync Base Global State & HTML Text Inputs
             factionSelect.value = d.faction;
