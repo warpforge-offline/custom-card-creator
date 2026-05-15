@@ -583,140 +583,175 @@ async function syncToVault(action, payload) {
 
 async function saveCardToCloud() {
     const cardName = document.getElementById('cardNameInput').value;
-    
-    // 1. Upload the RAW ORIGINAL art, not the canvas
-    const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', },
-        body: JSON.stringify({
-            image: currentRawArtBase64,
-            cardName: cardName,
-            auth: getAuth()
-        })
-    });
-    const uploadData = await uploadRes.json();
+    if (!cardName || cardName.trim() === "") {
+        return alert("Please enter a valid card name before saving.");
+    }
 
-    // 2. Save to Zilliz
-const payload = {
-    collectionName: 'warpforge_community_cards',
-    data: [{
-        card_title: cardName,
-        username: getAuth().user,
-        art_url: uploadData.url,
-        frame_path: activeFramePath,
-        faction: factionSelect.value,
-        type: typeSelect.value,
-        trait: document.getElementById('traitInput').value || "",
-        rules: document.getElementById('rulesInput').value || "",
-        stat_melee: parseInt(document.getElementById('stat1').value) || 0,
-        stat_ranged: parseInt(document.getElementById('stat2').value) || 0,
-        stat_health: parseInt(document.getElementById('stat3').value) || 0,
-        stat_special: parseInt(document.getElementById('stat4').value) || 0,
-        ui_config: JSON.stringify({
-            margins: cardMargins,
-            positions: statPositions,
-            rarity: document.getElementById('raritySelect').value
-        }),
-        dummy_vector: [0.1, 0.2]
-    }]
-};
+    // Turn loader overlay ON
+    showLoader(`Saving "${cardName}"...`);
 
-    await syncToVault('save', payload);
+    try {
+        // 1. Upload the RAW ORIGINAL art, not the canvas
+        const uploadRes = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                image: currentRawArtBase64,
+                cardName: cardName,
+                auth: getAuth()
+            })
+        });
+        const uploadData = await uploadRes.json();
+        
+        if (uploadData.error) throw new Error(uploadData.error);
+
+        // 2. Save payload structure to Zilliz
+        const payload = {
+            collectionName: 'warpforge_community_cards',
+            data: [{
+                card_title: cardName,
+                username: getAuth().user, 
+                art_url: uploadData.url,
+                frame_path: activeFramePath,
+                faction: factionSelect.value,
+                type: typeSelect.value,
+                trait: document.getElementById('traitInput').value || "",
+                rules: document.getElementById('rulesInput').value || "",
+                stat_melee: parseInt(document.getElementById('stat1').value) || 0,
+                stat_ranged: parseInt(document.getElementById('stat2').value) || 0,
+                stat_health: parseInt(document.getElementById('stat3').value) || 0,
+                stat_special: parseInt(document.getElementById('stat4').value) || 0,
+                ui_config: JSON.stringify({
+                    margins: cardMargins,
+                    positions: statPositions,
+                    rarity: document.getElementById('raritySelect').value
+                }),
+                dummy_vector: [0.1, 0.2]
+            }]
+        };
+
+        const result = await syncToVault('save', payload);
+        
+        // Turn loader overlay OFF right before messaging
+        hideLoader();
+
+        // SUCCESS FEEDBACK ALERT
+        if (result && result.code === 0) {
+            alert(`"${cardName}" has been successfully vaulted to the cloud!`);
+        } else {
+            alert("Database accepted payload, but encountered an internal code mismatch.");
+        }
+
+    } catch (err) {
+        hideLoader(); // Make sure screen unlocks if network crashes
+        console.error(err);
+        alert("Save operation failed: " + err.message);
+    }
 }
 
 async function loadCardFromCloud() {
     const cardName = document.getElementById('cardNameInput').value;
-    const currentUser = getAuth().user; // Grab the active user
+    if (!cardName || cardName.trim() === "") {
+        return alert("Please enter a card name to load.");
+    }
 
-    const result = await syncToVault('load', {
-        collectionName: 'warpforge_community_cards',
-        filter: `card_title == '${cardName}' && username == '${currentUser}'`,
-        outputFields: ["*"]
-    });
+    // Turn loader overlay ON
+    showLoader(`Searching Vault for "${cardName}"...`);
 
-    if (result && result.data && result.data.length > 0) {
-        const d = result.data[0];
+    try {
+        const currentUser = getAuth().user;
+        const result = await syncToVault('load', {
+            collectionName: 'warpforge_community_cards',
+            filter: `card_title == '${cardName}' && username == '${currentUser}'`,
+            outputFields: ["*"]
+        });
 
-        // 1. Sync Base Global State & HTML Text Inputs
-        factionSelect.value = d.faction;
-        typeSelect.value = d.type;
-        document.getElementById('traitInput').value = d.trait;
-        document.getElementById('rulesInput').value = d.rules;
-        document.getElementById('stat1').value = d.stat_melee;
-        document.getElementById('stat2').value = d.stat_ranged;
-        document.getElementById('stat3').value = d.stat_health;
-        document.getElementById('stat4').value = d.stat_special;
+        if (result && result.data && result.data.length > 0) {
+            const d = d = result.data[0];
 
-        // Extract variant info cleanly out of the frame path string early
-        let savedVariantPart = null;
-        if (d.frame_path) {
-            savedVariantPart = d.frame_path.split('_').pop().replace('.png', '');
-        }
+            // 1. Sync Base Global State & HTML Text Inputs
+            factionSelect.value = d.faction;
+            typeSelect.value = d.type;
+            document.getElementById('traitInput').value = d.trait;
+            document.getElementById('rulesInput').value = d.rules;
+            document.getElementById('stat1').value = d.stat_melee;
+            document.getElementById('stat2').value = d.stat_ranged;
+            document.getElementById('stat3').value = d.stat_health;
+            document.getElementById('stat4').value = d.stat_special;
 
-        // 2. Rebuild UI Layout (Dropdowns and Thumbnails) Exactly Once
-        updateFilters(savedVariantPart);
+            let savedVariantPart = null;
+            if (d.frame_path) {
+                savedVariantPart = d.frame_path.split('_').pop().replace('.png', '');
+            }
 
-        // 3. Force Variant Dropdown Selection & Sync Active Thumbnail
-        if (d.frame_path && savedVariantPart) {
-            variantSelect.value = savedVariantPart;
+            // 2. Rebuild UI Layout Exactly Once
+            updateFilters(savedVariantPart);
 
-            // Loop through the fresh gallery thumbnails to highlight the saved variant matching your database path
-            const allThumbs = document.querySelectorAll('.thumbnail');
-            allThumbs.forEach(thumb => {
-                // Normalize URLs or use a safe partial match check
-                if (thumb.getAttribute('src') === d.frame_path || thumb.src.includes(d.frame_path)) {
-                    updateActiveThumbnail(thumb);
-                }
-            });
-        }
+            // 3. Force Variant Dropdown Selection & Sync Active Thumbnail
+            if (d.frame_path && savedVariantPart) {
+                variantSelect.value = savedVariantPart;
 
-        // 4. Restore Visual Metadata Configurations
-        const config = JSON.parse(d.ui_config);
-        cardMargins = config.margins;
-        statPositions = config.positions;
-        document.getElementById('raritySelect').value = config.rarity;
+                const allThumbs = document.querySelectorAll('.thumbnail');
+                allThumbs.forEach(thumb => {
+                    if (thumb.getAttribute('src') === d.frame_path || thumb.src.includes(d.frame_path)) {
+                        updateActiveThumbnail(thumb);
+                    }
+                });
+            }
+            
+            // 4. Restore Visual Metadata Configurations
+            const config = JSON.parse(d.ui_config);
+            cardMargins = config.margins;
+            statPositions = config.positions;
+            document.getElementById('raritySelect').value = config.rarity;
 
-        // 5. Explicit Visibility Sync (Handles Warlord/Troop/Stratagem toggle structures)
-        const isTroop = d.type === 'troop' || d.type === 'warlord';
-        const hasEnergy = d.type === 'troop' || d.type === 'stratagem';
+            // 5. Explicit Visibility Sync
+            const isTroop = d.type === 'troop' || d.type === 'warlord';
+            const hasEnergy = d.type === 'troop' || d.type === 'stratagem';
 
-        document.getElementById('meleeToggle').checked = isTroop;
-        document.getElementById('rangedToggle').checked = isTroop;
-        document.getElementById('healthToggle').checked = isTroop;
-        document.getElementById('energyToggle').checked = hasEnergy;
+            document.getElementById('meleeToggle').checked = isTroop;
+            document.getElementById('rangedToggle').checked = isTroop;
+            document.getElementById('healthToggle').checked = isTroop;
+            document.getElementById('energyToggle').checked = hasEnergy;
 
-        document.getElementById('meleeControlsContainer').style.display = isTroop ? 'block' : 'none';
-        document.getElementById('rangedControlsContainer').style.display = isTroop ? 'block' : 'none';
-        document.getElementById('healthControlsContainer').style.display = isTroop ? 'block' : 'none';
-        document.getElementById('energyControlsContainer').style.display = hasEnergy ? 'block' : 'none';
+            document.getElementById('meleeControlsContainer').style.display = isTroop ? 'block' : 'none';
+            document.getElementById('rangedControlsContainer').style.display = isTroop ? 'block' : 'none';
+            document.getElementById('healthControlsContainer').style.display = isTroop ? 'block' : 'none';
+            document.getElementById('energyControlsContainer').style.display = hasEnergy ? 'block' : 'none';
 
-        // 6. Asynchronously Load Assets to Draw to Canvas 
-        updateSliderDisplays();
-        updateRarityImage(); // Updates rarity background source, triggers load + draw
+            // 6. Asynchronously Load Assets to Draw to Canvas 
+            updateSliderDisplays();
+            updateRarityImage(); 
 
-        // Restore Raw Image Asset from Cloudinary
-        if (d.art_url) {
-            currentRawArtBase64 = d.art_url;
+            // Restore Raw Image Asset from Cloudinary
+            if (d.art_url) {
+                currentRawArtBase64 = d.art_url; 
+                artImage.onload = drawCard;
+                artImage.src = d.art_url; 
+            } else {
+                currentRawArtBase64 = "";
+                artImage.src = ""; 
+            }
 
-            // Explicitly enforce anonymous CORS right before fetching from Cloudinary
-            artImage.crossOrigin = "anonymous";
-            artImage.onload = drawCard;
-            artImage.src = d.art_url; 
+            // Finally, load the frame asset
+            if (d.frame_path) {
+                loadFrame(d.frame_path); 
+            } else {
+                drawCard();
+            }
+            
+            // Turn loader overlay OFF right before success feedback message
+            hideLoader();
+            alert(`Loaded "${cardName}" successfully.`);
+
         } else {
-            currentRawArtBase64 = "";
-            artImage.src = ""; 
+            hideLoader(); // Turn loader overlay OFF if record is missing
+            alert("Card not found in your private vault.");
         }
-
-        // Finally, load the frame asset (resizes canvas and draws final image sequence)
-        if (d.frame_path) {
-            loadFrame(d.frame_path); 
-        } else {
-            drawCard();
-        }
-        
-        alert(`Loaded "${cardName}" successfully.`);
-    } else {
-        alert("Card not found in the vault.");
+    } catch (err) {
+        hideLoader(); // Unlock screen if execution breaks
+        console.error(err);
+        alert("Load operation failed: " + err.message);
     }
 }
 
@@ -762,6 +797,23 @@ function getAuth() {
         user: document.getElementById('vaultUser').value,
         pass: document.getElementById('vaultPass').value
     };
+}
+
+// --- Global UI Loading Helpers ---
+function showLoader(message = "Processing...") {
+    const modal = document.getElementById('loadingModal');
+    const text = document.getElementById('loadingText');
+    if (modal && text) {
+        text.textContent = message;
+        modal.style.display = 'flex'; // Shows the overlay centering items
+    }
+}
+
+function hideLoader() {
+    const modal = document.getElementById('loadingModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 }
 
 init();

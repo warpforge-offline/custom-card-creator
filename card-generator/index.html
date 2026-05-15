@@ -233,6 +233,38 @@
             <div id="frameGallery" class="gallery-grid"></div>
         </aside>
     </div>
+    
+    <!-- Loading Spinner-->
+        <div id="loadingModal" style="
+        display: none; 
+        position: fixed; 
+        top: 0; left: 0; 
+        width: 100%; height: 100%; 
+        background: rgba(0, 0, 0, 0.75); 
+        z-index: 9999; 
+        justify-content: center; 
+        align-items: center; 
+        flex-direction: column;
+        font-family: 'Barlow', sans-serif;
+        color: white;">
+        
+        <div style="
+            width: 50px; height: 50px; 
+            border: 5px solid #333; 
+            border-top: 5px solid #E88E57; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;"></div>
+            
+        <h3 id="loadingText" style="margin: 0; letter-spacing: 1px;">Processing...</h3>
+    </div>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
     <script src="app.js"></script>
 </body>
 </html>
