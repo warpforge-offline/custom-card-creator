@@ -22,7 +22,7 @@ async function verifyUser(username, password) {
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { action, payload } = req.body;
+    const { action, payload, auth } = req.body;
 
     // --- Valid User GATEKEEPER ---
     if (!auth || !(await verifyUser(auth.user, auth.pass))) {
