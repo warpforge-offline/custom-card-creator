@@ -74,6 +74,7 @@ const galleryContainer = document.getElementById('frameGallery');
 // --- State ---
 let artImage = new Image();
 let frameImage = new Image();
+let activeFramePath = "";
 
 let statBgImage = new Image();
 // Tell the canvas to redraw once this image successfully downloads from Github
@@ -139,6 +140,8 @@ function updateFilters(selectedVariantKey = null) {
 }
 
 function loadFrame(src) {
+    activeFramePath = src;
+
     frameImage.onload = () => {
         // Dynamically resize canvas to match the PNG's natural dimensions
         canvas.width = frameImage.naturalWidth;
@@ -477,7 +480,7 @@ document.getElementById('artInput').onchange = (e) => {
 
 document.getElementById('cardNameInput').oninput = drawCard;
 
-factionSelect.addEventListener('change', updateFilters);
+factionSelect.addEventListener('change', () => updateFilters());
 
 // Cleaned up to only fire once!
 typeSelect.addEventListener('change', () => {
@@ -552,9 +555,6 @@ async function syncToVault(action, payload) {
 
 async function saveCardToCloud() {
     const cardName = document.getElementById('cardNameInput').value;
-
-    // Capture the current frame path from the image object
-    const currentFramePath = frameImage.getAttribute('src');
     
     // 1. Upload the RAW ORIGINAL art, not the canvas
     const uploadRes = await fetch('/api/upload', {
@@ -574,6 +574,7 @@ const payload = {
     data: [{
         card_title: cardName,
         art_url: uploadData.url,
+        frame_path: activeFramePath,
         faction: factionSelect.value,
         type: typeSelect.value,
         trait: document.getElementById('traitInput').value || "",
