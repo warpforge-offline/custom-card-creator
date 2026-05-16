@@ -31,6 +31,10 @@ const frameLibrary = {
         troop: ["1"],
         stratagem: []
     },
+    mechanicus: {
+        troop: ["1"],
+        stratagem: []
+    },
     necrons: {
         troop: ["1", "2", "3", "4"],
         stratagem: ["1", "2", "3", "4"]
