@@ -738,7 +738,7 @@ function switchTab(targetTab) {
     if (targetTab === 'studio') {
         studioDiv.style.display = 'flex';
         factoryDiv.style.display = 'none';
-        studioBtn.style.backgroundColor = '#E88E57';
+        studioBtn.style.backgroundColor = '#7289da';
         factoryBtn.style.backgroundColor = '#444';
     } else if (targetTab === 'factory') {
         studioDiv.style.display = 'none';
