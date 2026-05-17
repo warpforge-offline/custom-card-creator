@@ -122,7 +122,7 @@ function updateFilters(selectedVariantKey = null) {
     variants.forEach(v => {
         const vKey = v.toLowerCase().replace(/\s+/g, '_');
         
-        const cloudBaseUrl = `https://res.cloudinary.com/your-cloud-name/image/upload/warpforge_frames`;
+        const cloudBaseUrl = `https://res.cloudinary.com/dhny3c6gr/image/upload/warpforge_frames`;
         const path = `${cloudBaseUrl}/${faction}/${type}_${vKey}.png`;
 
         // Update Dropdown
@@ -214,7 +214,7 @@ function drawCard() {
         drawCenterCrop(artImage, marginLeft, marginTop, safeWidth, safeHeight);
     }
 
-    if (frameImage.complete) {
+    if (frameImage.complete && frameImage.naturalWidth !== 0) {
         ctx.drawImage(frameImage, 0, 0, w, h);
     }
     
