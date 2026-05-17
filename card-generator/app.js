@@ -80,9 +80,7 @@ let artImage = new Image();
 artImage.crossOrigin = "anonymous";
 
 let frameImage = new Image();
-// If  frame images ever move to a cloud bucket or external host
-// uncomment the following line, too:
-// frameImage.crossOrigin = "anonymous";
+frameImage.crossOrigin = "anonymous";
 
 let activeFramePath = "";
 
@@ -123,7 +121,9 @@ function updateFilters(selectedVariantKey = null) {
 
     variants.forEach(v => {
         const vKey = v.toLowerCase().replace(/\s+/g, '_');
-        const path = `assets/frames/${faction}/${type}_${vKey}.png`;
+        
+        const cloudBaseUrl = `https://res.cloudinary.com/your-cloud-name/image/upload/warpforge_frames`;
+        const path = `${cloudBaseUrl}/${faction}/${type}_${vKey}.png`;
 
         // Update Dropdown
         const opt = document.createElement('option');
@@ -135,6 +135,7 @@ function updateFilters(selectedVariantKey = null) {
         const thumb = document.createElement('img');
         thumb.src = path;
         thumb.className = 'thumbnail';
+        thumb.crossOrigin = "anonymous"; // Essential to avoid canvas corruption!
         thumb.onclick = () => {
             variantSelect.value = vKey;
             loadFrame(path);
@@ -143,7 +144,6 @@ function updateFilters(selectedVariantKey = null) {
         galleryContainer.appendChild(thumb);
     });
 
-    // FIX: Only click the default first option if we AREN'T loading a specific saved card variant
     if (variants.length > 0 && !selectedVariantKey) {
         galleryContainer.firstChild.click();
     }
