@@ -64,6 +64,111 @@
                     <input type="file" id="artInput" accept="image/*">
                 </div>
 
+                <div class="control-group">
+                    <h3>Art Image Margin Tuning</h3>
+                    
+                    <label>Top: <span id="topVal">8</span>%</label>
+                    <input type="range" id="topSlider" min="0" max="40" value="8">
+
+                    <label>Bottom: <span id="bottomVal">15</span>%</label>
+                    <input type="range" id="bottomSlider" min="0" max="40" value="15">
+
+                    <label>Left: <span id="leftVal">8</span>%</label>
+                    <input type="range" id="leftSlider" min="0" max="40" value="8">
+
+                    <label>Right: <span id="rightVal">8</span>%</label>
+                    <input type="range" id="rightSlider" min="0" max="40" value="8">
+                </div>
+
+                <div class="control-group">
+                    <label>Rarity</label>
+                    <select id="raritySelect">
+                        <option value="common">Common</option>
+                        <option value="rare">Rare</option>
+                        <option value="epic">Epic</option>
+                        <option value="legendary">Legendary</option>
+                        <option value="special">Special</option>
+                    </select>
+                    
+                    <div class="offset-controls">
+                        <label>X-Offset: <span id="rarityXVal">0.0</span>%</label>
+                        <input type="range" id="rarityX" min="-5" max="5" step="0.1" value="0">
+                        
+                        <label>Y-Offset: <span id="rarityYVal">0.0</span>%</label>
+                        <input type="range" id="rarityY" min="-5" max="5" step="0.1" value="0">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <h3>Stats & Positioning</h3>
+                    <hr>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <input type="checkbox" id="energyToggle" checked>
+                        <label for="energyToggle" style="margin: 0; font-weight: bold; cursor: pointer;">Enable Energy</label>
+                    </div>
+                    <div id="energyControlsContainer">
+                        <label>Energy Value</label>
+                        <input type="number" id="stat4" value="3">
+                        <div class="offset-controls">
+                            <label>X-Offset: <span id="stat4XVal">0.0</span>%</label>
+                            <input type="range" id="stat4X" min="-5" max="5" step="0.1" value="0">
+                            <label>Y-Offset: <span id="stat4YVal">0.0</span>%</label>
+                            <input type="range" id="stat4Y" min="-5" max="5" step="0.1" value="0">
+                        </div>
+                    </div>
+
+                    <hr>
+                    
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <input type="checkbox" id="meleeToggle" checked>
+                        <label for="meleeToggle" style="margin: 0; font-weight: bold; cursor: pointer;">Enable Melee Attack</label>
+                    </div>
+                    <div id="meleeControlsContainer">
+                        <label>Melee Attack Value</label>
+                        <input type="number" id="stat1" value="3">
+                        <div class="offset-controls">
+                            <label>X-Offset: <span id="stat1XVal">0.0</span>%</label>
+                            <input type="range" id="stat1X" min="-5" max="5" step="0.1" value="0">
+                            <label>Y-Offset: <span id="stat1YVal">0.0</span>%</label>
+                            <input type="range" id="stat1Y" min="-5" max="5" step="0.1" value="0">
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <input type="checkbox" id="rangedToggle" checked>
+                        <label for="rangedToggle" style="margin: 0; font-weight: bold; cursor: pointer;">Enable Ranged Attack</label>
+                    </div>
+                    <div id="rangedControlsContainer">
+                        <label>Ranged Attack Value</label>
+                        <input type="number" id="stat2" value="3">
+                        <div class="offset-controls">
+                            <label>X-Offset: <span id="stat2XVal">0.0</span>%</label>
+                            <input type="range" id="stat2X" min="-5" max="5" step="0.1" value="0">
+                            <label>Y-Offset: <span id="stat2YVal">0.0</span>%</label>
+                            <input type="range" id="stat2Y" min="-5" max="5" step="0.1" value="0">
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <input type="checkbox" id="healthToggle" checked>
+                        <label for="healthToggle" style="margin: 0; font-weight: bold; cursor: pointer;">Enable Health</label>
+                    </div>
+                    <div id="healthControlsContainer">
+                        <label>Health Value</label>
+                        <input type="number" id="stat3" value="3">
+                        <div class="offset-controls">
+                            <label>X-Offset: <span id="stat3XVal">0.0</span>%</label>
+                            <input type="range" id="stat3X" min="-5" max="5" step="0.1" value="0">
+                            <label>Y-Offset: <span id="stat3YVal">0.0</span>%</label>
+                            <input type="range" id="stat3Y" min="-5" max="5" step="0.1" value="0">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="control-group cloud-section">
                     <h3>Personal Vault</h3>
                     <div class="control-group" style="margin-bottom: 10px;">

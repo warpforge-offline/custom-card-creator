@@ -2,16 +2,8 @@ const canvas = document.getElementById('cardCanvas');
 const ctx = canvas.getContext('2d');
 
 // --- Configuration ---
-// --- Dinamycally populated from a DB configuration value
 let frameLibrary = {};
-
-// Adjust these percentages independently to fit your specific frame design
-let cardMargins = {
-    top: 0.08,    // 8% from top
-    bottom: 0.15, // 15% from bottom (increased to hide those edges!)
-    left: 0.08,   // 8% from left
-    right: 0.08   // 8% from right
-};
+let cardMargins = { top: 0.08, bottom: 0.15, left: 0.08, right: 0.08 };
 
 // --- Elements ---
 const factionSelect = document.getElementById('factionSelect');
@@ -27,16 +19,11 @@ let frameImage = new Image();
 frameImage.crossOrigin = "anonymous";
 
 let activeFramePath = "";
+let currentRawArtBase64 = ""; 
 
 let statBgImage = new Image();
-// Tell the canvas to redraw once this image successfully downloads from Github
-statBgImage.onload = () => { drawCard(); };
-statBgImage.src = 'assets/energy.png';
-
 let rarityBgImage = new Image();
-rarityBgImage.onload = () => { drawCard(); };
 
-// Update your statPositions to include the 4th stat
 let statPositions = {
     melee:  { baseX: 0.10, baseY: 0.89, offsetX: 0, offsetY: 0 },
     ranged: { baseX: 0.21, baseY: 0.96, offsetX: 0, offsetY: 0 },
@@ -45,11 +32,22 @@ let statPositions = {
     rarity: { baseX: 0.50, baseY: 0.92, offsetX: 0, offsetY: 0 }
 };
 
-// --- Initialization ---
+// --- Secure Initialization ---
+// This guarantees the HTML is 100% loaded before JS starts looking for IDs
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+});
+
 async function init() {
+    setupEventListeners(); // Bind all inputs safely first
     setupMarginSliders();
     setupStatSliders();
     setupAuthListeners();
+    
+    // Assign Image Sources after DOM is ready to prevent premature draw calls
+    statBgImage.onload = () => { drawCard(); };
+    statBgImage.src = 'assets/energy.png';
+    rarityBgImage.onload = () => { drawCard(); };
     
     showLoader("Fetching frame library...");
     await fetchLibraryConfig();
@@ -60,31 +58,29 @@ async function init() {
     updateFilters();
 }
 
+// --- DOM Manipulation & Rendering ---
 function updateFilters(selectedVariantKey = null) {
     const faction = factionSelect.value;
     const type = typeSelect.value === 'warlord' ? 'troop' : typeSelect.value;
-    const variants = frameLibrary[faction][type];
+    const variants = frameLibrary[faction]?.[type] || [];
     
     variantSelect.innerHTML = '';
     galleryContainer.innerHTML = '';
 
     variants.forEach(v => {
         const vKey = v.toLowerCase().replace(/\s+/g, '_');
-        
         const cloudBaseUrl = `https://res.cloudinary.com/dhny3c6gr/image/upload/warpforge_frames`;
         const path = `${cloudBaseUrl}/${faction}/${type}_${vKey}.png`;
 
-        // Update Dropdown
         const opt = document.createElement('option');
         opt.value = vKey;
         opt.textContent = v;
         variantSelect.appendChild(opt);
 
-        // Update Gallery
         const thumb = document.createElement('img');
         thumb.src = path;
         thumb.className = 'thumbnail';
-        thumb.crossOrigin = "anonymous"; // Essential to avoid canvas corruption!
+        thumb.crossOrigin = "anonymous"; 
         thumb.onclick = () => {
             variantSelect.value = vKey;
             loadFrame(path);
@@ -100,12 +96,9 @@ function updateFilters(selectedVariantKey = null) {
 
 function loadFrame(src) {
     activeFramePath = src;
-
     frameImage.onload = () => {
-        // Dynamically resize canvas to match the PNG's natural dimensions
         canvas.width = frameImage.naturalWidth;
         canvas.height = frameImage.naturalHeight;
-        
         drawCard();
     };
     frameImage.src = src;
@@ -116,31 +109,17 @@ function updateActiveThumbnail(selectedThumb) {
     selectedThumb.classList.add('active');
 }
 
-// 2. Helper function to setup slider listeners
 function setupMarginSliders() {
     const sides = ['top', 'bottom', 'left', 'right'];
-    
     sides.forEach(side => {
         const slider = document.getElementById(`${side}Slider`);
         const display = document.getElementById(`${side}Val`);
-        
-        if (!slider) {
-            console.error(`Slider not found: ${side}Slider`);
-            return;
-        }
+        if (!slider) return;
 
         slider.oninput = (e) => {
             const val = parseFloat(e.target.value);
-            
-            // UI Sync
             display.textContent = val;
-            
-            // Logic Sync (Convert 10 to 0.10)
             cardMargins[side] = val / 100;
-            
-            console.log(`Updated ${side}:`, cardMargins[side]); // Debug check
-            
-            // Trigger the Redraw
             drawCard();
         };
     });
@@ -149,6 +128,8 @@ function setupMarginSliders() {
 function drawCard() {
     const w = canvas.width;
     const h = canvas.height;
+    if (w === 0 || h === 0) return; // Failsafe against empty canvas sizes
+
     ctx.clearRect(0, 0, w, h);
 
     const marginLeft = w * cardMargins.left;
@@ -167,7 +148,6 @@ function drawCard() {
         ctx.drawImage(frameImage, 0, 0, w, h);
     }
     
-    // --- CALL YOUR TEXT RENDERING HERE ---
     renderName(w, h);
     renderRules(w, h);
     renderRarity(w, h);
@@ -177,7 +157,6 @@ function drawCard() {
 function drawCenterCrop(img, destX, destY, destW, destH) {
     const sourceAspect = img.width / img.height;
     const destAspect = destW / destH;
-
     let sx, sy, sWidth, sHeight;
 
     if (sourceAspect > destAspect) {
@@ -191,32 +170,24 @@ function drawCenterCrop(img, destX, destY, destW, destH) {
         sx = 0;
         sy = (img.height - sHeight) / 2;
     }
-
-    // This draws the art ONLY inside the calculated safe rectangle
     ctx.drawImage(img, sx, sy, sWidth, sHeight, destX, destY, destW, destH);
 }
 
 function applyTypeDefaults() {
     const cardType = document.getElementById('typeSelect').value;
-    
-    // Warlords and Troops share the same combat stats
     const isTroop = cardType === 'troop' || cardType === 'warlord';
-    // Troops and Stratagems have Energy. Warlords do NOT.
     const hasEnergy = cardType === 'troop' || cardType === 'stratagem';
 
-    // 1. Force the checkboxes to the correct state
     document.getElementById('meleeToggle').checked = isTroop;
     document.getElementById('rangedToggle').checked = isTroop;
     document.getElementById('healthToggle').checked = isTroop;
     document.getElementById('energyToggle').checked = hasEnergy;
 
-    // 2. Hide or show the control containers in the sidebar
     document.getElementById('meleeControlsContainer').style.display = isTroop ? 'block' : 'none';
     document.getElementById('rangedControlsContainer').style.display = isTroop ? 'block' : 'none';
     document.getElementById('healthControlsContainer').style.display = isTroop ? 'block' : 'none';
     document.getElementById('energyControlsContainer').style.display = hasEnergy ? 'block' : 'none';
 
-    // 3. Redraw the canvas
     drawCard();
 }
 
@@ -232,7 +203,7 @@ async function fetchLibraryConfig() {
                     filter: "config_key == 'frame_library'",
                     outputFields: ["config_value"]
                 },
-                auth: { user: "guest", pass: "guest" } // Safe context workaround since query is public config
+                auth: { user: "guest", pass: "guest" } 
             })
         });
         const resJson = await response.json();
@@ -265,88 +236,46 @@ function setupStatSliders() {
 
             slider?.addEventListener('input', (e) => {
                 const val = parseFloat(e.target.value);
-                
-                // Add a '+' sign for positive numbers so it looks like a true offset UI
                 display.textContent = (val > 0 ? '+' : '') + val.toFixed(1); 
-                
-                // Update the Offset state (convert +/- 5 into +/- 0.05)
                 statPositions[conf.key]['offset' + axis] = val / 100;
-                
                 drawCard();
             });
         });
     });
 }
 
-function setupAuthListeners() {
-    const authInputs = ['vaultUser', 'vaultPass'];
-    const saveBtn = document.getElementById('saveBtn'); // Ensure these IDs match your HTML
-    const loadBtn = document.getElementById('loadBtn');
-
-    authInputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.oninput = () => {
-                const user = document.getElementById('vaultUser').value.trim();
-                const pass = document.getElementById('vaultPass').value.trim();
-                const hasCreds = user !== "" && pass !== "";
-                
-                // Toggle visibility
-                saveBtn.style.display = hasCreds ? 'block' : 'none';
-                loadBtn.style.display = hasCreds ? 'block' : 'none';
-            };
-        }
-    });
-}
-
 function renderStats(w, h) {
-    // Grab the toggle states
     const isMeleeEnabled = document.getElementById('meleeToggle').checked;
     const isRangedEnabled = document.getElementById('rangedToggle').checked;
     const isHealthEnabled = document.getElementById('healthToggle').checked;
     const isEnergyEnabled = document.getElementById('energyToggle').checked;
 
-    // Grab the values
     const meleeVal = document.getElementById('stat1').value;
     const rangedVal = document.getElementById('stat2').value;
     const healthVal = document.getElementById('stat3').value;
     const specialVal = document.getElementById('stat4').value; 
     
-    // Calculate Final Coordinates: Base + Offset
     const meleeX = w * (statPositions.melee.baseX + statPositions.melee.offsetX);
     const meleeY = h * (statPositions.melee.baseY + statPositions.melee.offsetY);
-
     const rangedX = w * (statPositions.ranged.baseX + statPositions.ranged.offsetX);
     const rangedY = h * (statPositions.ranged.baseY + statPositions.ranged.offsetY);
-    
     const healthX = w * (statPositions.health.baseX + statPositions.health.offsetX);
     const healthY = h * (statPositions.health.baseY + statPositions.health.offsetY);
-
     const specialX = w * (statPositions.special.baseX + statPositions.special.offsetX);
     const specialY = h * (statPositions.special.baseY + statPositions.special.offsetY);
 
-    // --- DRAW THE ENERGY IMAGE FIRST (If enabled) ---
     if (isEnergyEnabled && statBgImage.complete && statBgImage.src) {
         const badgeW = statBgImage.width * 0.35; 
         const badgeH = statBgImage.height * 0.35;
-        
-        ctx.drawImage(
-            statBgImage, 
-            specialX - (badgeW / 2), 
-            specialY - (badgeH / 2) - 25, 
-            badgeW, 
-            badgeH
-        );
+        ctx.drawImage(statBgImage, specialX - (badgeW / 2), specialY - (badgeH / 2) - 25, badgeW, badgeH);
     }
 
-    // --- DRAW THE TEXT ---
     ctx.textAlign = "center";
     ctx.fillStyle = "white";
     ctx.font = "70px 'Oswald'";
     ctx.shadowColor = "black";
     ctx.shadowBlur = 8;
 
-    // Only draw the ones that are toggled ON
     if (isMeleeEnabled) ctx.fillText(meleeVal, meleeX, meleeY);
     if (isRangedEnabled) ctx.fillText(rangedVal, rangedX, rangedY);
     if (isHealthEnabled) ctx.fillText(healthVal, healthX, healthY);
@@ -359,39 +288,27 @@ function renderRarity(w, h) {
     if (rarityBgImage.complete && rarityBgImage.src) {
         const rarityX = w * (statPositions.rarity.baseX + statPositions.rarity.offsetX);
         const rarityY = h * (statPositions.rarity.baseY + statPositions.rarity.offsetY);
-        
         const badgeW = rarityBgImage.width;
         const badgeH = rarityBgImage.height;
-        
-        ctx.drawImage(
-            rarityBgImage, 
-            rarityX - (badgeW / 2), 
-            rarityY - (badgeH / 2), 
-            badgeW, 
-            badgeH
-        );
+        ctx.drawImage(rarityBgImage, rarityX - (badgeW / 2), rarityY - (badgeH / 2), badgeW, badgeH);
     }
 }
 
 function renderRules(w, h) {
     const rules = document.getElementById('rulesInput').value;
-    const cardType = document.getElementById('typeSelect').value; // Get the current type
+    const cardType = document.getElementById('typeSelect').value;
     if (!rules) return;
 
     ctx.font = "34px 'Barlow', sans-serif"; 
     ctx.textAlign = "center";
-    
     ctx.strokeStyle = "black";
     ctx.lineWidth = 4;      
     ctx.lineJoin = "round"; 
 
     const lines = rules.split('\n');
     const lineHeight = 42; 
-    
-    // Default Stratagem Y is 0.72. If Troop or Warlord, pull it up to 0.63
     let y = cardType === 'stratagem' ? h * 0.72 : h * 0.63; 
 
-    // Draw the Rules Text
     ctx.fillStyle = "#e0e0e0"; 
     lines.forEach(line => {
         ctx.strokeText(line, w / 2, y);
@@ -399,190 +316,164 @@ function renderRules(w, h) {
         y += lineHeight;
     });
 
-    // Draw the Subtype (Trait)
     const trait = document.getElementById('traitInput').value;
     ctx.font = "34px 'Barlow', sans-serif"; 
     ctx.fillStyle = "#E88E57"; 
-    
     ctx.strokeText(trait, w / 2, y + 10); 
     ctx.fillText(trait, w / 2, y + 10); 
 }
 
 function renderName(w, h) {
     const name = document.getElementById('cardNameInput').value;
-    const cardType = document.getElementById('typeSelect').value; // Get the current type
-    
-    // Default Troop or Warlord Y is 0.58. If Stratagem, push it down to 0.63
+    const cardType = document.getElementById('typeSelect').value; 
     const nameY = cardType === 'stratagem' ? h * 0.67 : h * 0.58;
     
     ctx.font = "700 50px 'Merriweather', serif"; 
     ctx.textAlign = "center";
     ctx.fillStyle = "#E88E57"; 
-    
     ctx.shadowBlur = 4;
     ctx.shadowColor = "rgba(0,0,0,0.8)"; 
-    
-    // Use the dynamic nameY instead of hardcoding h * 0.58
     ctx.fillText(name, w / 2, nameY);
-    
     ctx.shadowBlur = 0; 
 }
 
-// --- Event Listeners ---
-// Setup all the stat visibility toggles
-const statToggles = [
-    { id: 'energyToggle', container: 'energyControlsContainer' },
-    { id: 'meleeToggle', container: 'meleeControlsContainer' },
-    { id: 'rangedToggle', container: 'rangedControlsContainer' },
-    { id: 'healthToggle', container: 'healthControlsContainer' }
-];
+// --- Safely Encapsulated Event Listeners ---
+function setupEventListeners() {
+    const statToggles = [
+        { id: 'energyToggle', container: 'energyControlsContainer' },
+        { id: 'meleeToggle', container: 'meleeControlsContainer' },
+        { id: 'rangedToggle', container: 'rangedControlsContainer' },
+        { id: 'healthToggle', container: 'healthControlsContainer' }
+    ];
 
-statToggles.forEach(toggle => {
-    document.getElementById(toggle.id)?.addEventListener('change', (e) => {
-        const container = document.getElementById(toggle.container);
-        // Hide or show the inputs in the sidebar
-        container.style.display = e.target.checked ? 'block' : 'none';
-        // Redraw to update the canvas
-        drawCard(); 
+    statToggles.forEach(toggle => {
+        document.getElementById(toggle.id)?.addEventListener('change', (e) => {
+            document.getElementById(toggle.container).style.display = e.target.checked ? 'block' : 'none';
+            drawCard(); 
+        });
     });
-});
 
-// Ensure this variable name matches what your save function uses
-let currentRawArtBase64 = ""; 
-
-document.getElementById('artInput').onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        currentRawArtBase64 = event.target.result;
-        
-        // Reset crossOrigin to null for local data URLs so it doesn't conflict
-        artImage.removeAttribute('crossOrigin'); 
-        
-        artImage.onload = drawCard;
-        artImage.src = currentRawArtBase64;
+    document.getElementById('artInput').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            currentRawArtBase64 = event.target.result;
+            artImage.removeAttribute('crossOrigin'); 
+            artImage.onload = drawCard;
+            artImage.src = currentRawArtBase64;
+        };
+        reader.readAsDataURL(file);
     };
-    reader.readAsDataURL(file);
-};
 
-// --- Two-Way Name Synchronization for both fields CardName ---
-const mainNameInput = document.getElementById('cardNameInput');
-const vaultNameInput = document.getElementById('vaultCardName'); // The new one
+    const mainNameInput = document.getElementById('cardNameInput');
+    const vaultNameInput = document.getElementById('vaultCardName'); 
 
-// When the top input changes -> update the bottom one and draw
-mainNameInput.addEventListener('input', (e) => {
-    if (vaultNameInput) vaultNameInput.value = e.target.value;
-    drawCard();
-});
-
-// When the bottom input changes -> update the top one and draw
-if (vaultNameInput) {
-    vaultNameInput.addEventListener('input', (e) => {
-        mainNameInput.value = e.target.value;
+    mainNameInput?.addEventListener('input', (e) => {
+        if (vaultNameInput) vaultNameInput.value = e.target.value;
         drawCard();
+    });
+
+    if (vaultNameInput) {
+        vaultNameInput.addEventListener('input', (e) => {
+            if (mainNameInput) mainNameInput.value = e.target.value;
+            drawCard();
+        });
+    }
+
+    factionSelect?.addEventListener('change', () => updateFilters());
+
+    typeSelect?.addEventListener('change', () => {
+        applyTypeDefaults(); 
+        updateFilters();    
+    });
+
+    variantSelect?.addEventListener('change', () => {
+        const type = typeSelect.value === 'warlord' ? 'troop' : typeSelect.value;
+        const path = `assets/frames/${factionSelect.value}/${type}_${variantSelect.value}.png`;
+        loadFrame(path);
+        
+        document.querySelectorAll('.thumbnail').forEach(thumb => {
+            if (thumb.src.includes(path)) updateActiveThumbnail(thumb);
+        });
+    });
+
+    document.getElementById('stat4')?.addEventListener('input', drawCard);
+    document.getElementById('stat1')?.addEventListener('input', drawCard);
+    document.getElementById('stat2')?.addEventListener('input', drawCard);
+    document.getElementById('stat3')?.addEventListener('input', drawCard);
+    document.getElementById('rulesInput')?.addEventListener('input', drawCard);
+    document.getElementById('traitInput')?.addEventListener('input', drawCard);
+
+    document.getElementById('raritySelect')?.addEventListener('change', () => {
+        updateRarityImage();
+    });
+
+    document.getElementById('downloadBtn').onclick = () => {
+        const cardName = document.getElementById('cardNameInput').value;
+        const safeName = cardName.replace(/[/\\?%*:|"<>]/g, '-');
+        const fileName = safeName.trim() || "card";
+        const link = document.createElement('a');
+        link.download = `${fileName}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    };
+}
+
+function setupAuthListeners() {
+    const authInputs = ['vaultUser', 'vaultPass'];
+    const saveBtn = document.getElementById('saveBtn'); 
+    const loadBtn = document.getElementById('loadBtn');
+
+    authInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.oninput = () => {
+                const user = document.getElementById('vaultUser').value.trim();
+                const pass = document.getElementById('vaultPass').value.trim();
+                const hasCreds = user !== "" && pass !== "";
+                if(saveBtn) saveBtn.style.display = hasCreds ? 'block' : 'none';
+                if(loadBtn) loadBtn.style.display = hasCreds ? 'block' : 'none';
+            };
+        }
     });
 }
 
-factionSelect.addEventListener('change', () => updateFilters());
-
-// Cleaned up to only fire once!
-typeSelect.addEventListener('change', () => {
-    applyTypeDefaults(); 
-    updateFilters();     
-});
-
-// Added back so the HTML dropdown works in sync with the thumbnails
-variantSelect.addEventListener('change', () => {
-    // Map warlord to troop for the file path
-    const type = typeSelect.value === 'warlord' ? 'troop' : typeSelect.value;
-    const path = `assets/frames/${factionSelect.value}/${type}_${variantSelect.value}.png`;
-    loadFrame(path);
-    
-    // Sync the gallery visual to match the dropdown selection
-    const allThumbs = document.querySelectorAll('.thumbnail');
-    allThumbs.forEach(thumb => {
-        if (thumb.src.includes(path)) {
-            updateActiveThumbnail(thumb);
-        }
-    });
-});
-
-document.getElementById('stat4')?.addEventListener('input', drawCard);
-document.getElementById('stat1').oninput = drawCard;
-document.getElementById('stat2').oninput = drawCard;
-document.getElementById('stat3').oninput = drawCard;
-document.getElementById('rulesInput').oninput = drawCard;
-document.getElementById('traitInput').addEventListener('input', drawCard);
-
-document.getElementById('raritySelect').addEventListener('change', () => {
-    updateRarityImage();
-});
-
-document.getElementById('downloadBtn').onclick = () => {
-    // 1. Grab the current Card Name from the input
-    const cardName = document.getElementById('cardNameInput').value;
-
-    // 2. Clean the filename (removes characters that operating systems don't like)
-    const safeName = cardName.replace(/[/\\?%*:|"<>]/g, '-');
-
-    // 3. Fallback to 'card' if the name field is empty
-    const fileName = safeName.trim() || "card";
-
-    // 4. Trigger the download
-    const link = document.createElement('a');
-    link.download = `${fileName}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-};
-
-// --- Cloud Sync Logic ---
+// --- Cloud & Network Functions ---
+function getAuth() {
+    return {
+        user: document.getElementById('vaultUser').value,
+        pass: document.getElementById('vaultPass').value
+    };
+}
 
 async function syncToVault(action, payload) {
     const response = await fetch('/api/vault', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            action, 
-            payload, 
-            auth: getAuth() // Attach credentials
-        })
+        body: JSON.stringify({ action, payload, auth: getAuth() })
     });
-    
     if (response.status === 401) {
         alert("Invalid Username or Password. Access Denied.");
         throw new Error("Unauthorized");
     }
-    
     return await response.json();
 }
 
 async function saveCardToCloud() {
     const cardName = document.getElementById('cardNameInput').value;
-    if (!cardName || cardName.trim() === "") {
-        return alert("Please enter a valid card name before saving.");
-    }
+    if (!cardName || cardName.trim() === "") return alert("Please enter a valid card name before saving.");
 
-    // Turn loader overlay ON
     showLoader(`Saving "${cardName}"...`);
-
     try {
-        // 1. Upload the RAW ORIGINAL art, not the canvas
         const uploadRes = await fetch('/api/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                image: currentRawArtBase64,
-                cardName: cardName,
-                auth: getAuth()
-            })
+            body: JSON.stringify({ image: currentRawArtBase64, cardName: cardName, auth: getAuth() })
         });
         const uploadData = await uploadRes.json();
-        
         if (uploadData.error) throw new Error(uploadData.error);
 
-        // 2. Save payload structure to Zilliz
         const payload = {
             collectionName: 'warpforge_community_cards',
             data: [{
@@ -608,19 +499,15 @@ async function saveCardToCloud() {
         };
 
         const result = await syncToVault('save', payload);
-        
-        // Turn loader overlay OFF right before messaging
         hideLoader();
 
-        // SUCCESS FEEDBACK ALERT
         if (result && result.code === 0) {
             alert(`"${cardName}" has been successfully vaulted to the cloud!`);
         } else {
             alert("Database accepted payload, but encountered an internal code mismatch.");
         }
-
     } catch (err) {
-        hideLoader(); // Make sure screen unlocks if network crashes
+        hideLoader();
         console.error(err);
         alert("Save operation failed: " + err.message);
     }
@@ -630,12 +517,10 @@ async function uploadCustomFrame(fileInputId) {
     const file = document.getElementById(fileInputId).files[0];
     if (!file) return alert("Please select a PNG frame image file first.");
 
-    // Target the specific factory authorization inputs
     const user = document.getElementById('factoryUser').value.trim();
     const pass = document.getElementById('factoryPass').value.trim();
     if (!user || !pass) return alert("Please fill out your credentials to authorize a frame submission.");
 
-    // Target the specific factory layout targets
     const targetFaction = document.getElementById('factoryFactionSelect').value;
     const targetType = document.getElementById('factoryTypeSelect').value;
 
@@ -648,9 +533,9 @@ async function uploadCustomFrame(fileInputId) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     image: e.target.result,
-                    faction: targetFaction, // <-- Updated target parameter hook
-                    type: targetType,       // <-- Updated target parameter hook
-                    auth: { user, pass }    // <-- Updated target parameter hook
+                    faction: targetFaction, 
+                    type: targetType,       
+                    auth: { user, pass }    
                 })
             });
             const data = await res.json();
@@ -658,19 +543,13 @@ async function uploadCustomFrame(fileInputId) {
 
             if (data.success) {
                 alert(`Success! Frame added globally as variant "${data.newVariant}". Returning to workspace.`);
-                
-                // 1. Force reload configuration layout matrices
                 await fetchLibraryConfig();
                 
-                // 2. Clear out the upload form state parameters safely
                 document.getElementById(fileInputId).value = "";
                 document.getElementById('factoryUser').value = "";
                 document.getElementById('factoryPass').value = "";
                 
-                // 3. Clear existing dropdown sync configurations to populate new index maps
                 updateFilters(); 
-                
-                // 4. Return the user smoothly back to their unchanged design workbench
                 switchTab('studio');
             } else {
                 alert("Upload failed: " + data.error);
@@ -685,13 +564,9 @@ async function uploadCustomFrame(fileInputId) {
 
 async function loadCardFromCloud() {
     const cardName = document.getElementById('cardNameInput').value;
-    if (!cardName || cardName.trim() === "") {
-        return alert("Please enter a card name to load.");
-    }
+    if (!cardName || cardName.trim() === "") return alert("Please enter a card name to load.");
 
-    // Turn loader overlay ON
     showLoader(`Searching Vault for "${cardName}"...`);
-
     try {
         const currentUser = getAuth().user;
         const result = await syncToVault('load', {
@@ -703,7 +578,6 @@ async function loadCardFromCloud() {
         if (result && result.data && result.data.length > 0) {
             const d = result.data[0];
 
-            // 1. Sync Base Global State & HTML Text Inputs
             factionSelect.value = d.faction;
             typeSelect.value = d.type;
             document.getElementById('traitInput').value = d.trait;
@@ -714,32 +588,24 @@ async function loadCardFromCloud() {
             document.getElementById('stat4').value = d.stat_special;
 
             let savedVariantPart = null;
-            if (d.frame_path) {
-                savedVariantPart = d.frame_path.split('_').pop().replace('.png', '');
-            }
+            if (d.frame_path) savedVariantPart = d.frame_path.split('_').pop().replace('.png', '');
 
-            // 2. Rebuild UI Layout Exactly Once
             updateFilters(savedVariantPart);
 
-            // 3. Force Variant Dropdown Selection & Sync Active Thumbnail
             if (d.frame_path && savedVariantPart) {
                 variantSelect.value = savedVariantPart;
-
-                const allThumbs = document.querySelectorAll('.thumbnail');
-                allThumbs.forEach(thumb => {
+                document.querySelectorAll('.thumbnail').forEach(thumb => {
                     if (thumb.getAttribute('src') === d.frame_path || thumb.src.includes(d.frame_path)) {
                         updateActiveThumbnail(thumb);
                     }
                 });
             }
             
-            // 4. Restore Visual Metadata Configurations
             const config = JSON.parse(d.ui_config);
             cardMargins = config.margins;
             statPositions = config.positions;
             document.getElementById('raritySelect').value = config.rarity;
 
-            // 5. Explicit Visibility Sync
             const isTroop = d.type === 'troop' || d.type === 'warlord';
             const hasEnergy = d.type === 'troop' || d.type === 'stratagem';
 
@@ -753,11 +619,9 @@ async function loadCardFromCloud() {
             document.getElementById('healthControlsContainer').style.display = isTroop ? 'block' : 'none';
             document.getElementById('energyControlsContainer').style.display = hasEnergy ? 'block' : 'none';
 
-            // 6. Asynchronously Load Assets to Draw to Canvas 
             updateSliderDisplays();
             updateRarityImage(); 
 
-            // Restore Raw Image Asset from Cloudinary
             if (d.art_url) {
                 currentRawArtBase64 = d.art_url; 
                 artImage.onload = drawCard;
@@ -767,31 +631,27 @@ async function loadCardFromCloud() {
                 artImage.src = ""; 
             }
 
-            // Finally, load the frame asset
             if (d.frame_path) {
                 loadFrame(d.frame_path); 
             } else {
                 drawCard();
             }
             
-            // Turn loader overlay OFF right before success feedback message
             hideLoader();
             alert(`Loaded "${cardName}" successfully.`);
-
         } else {
-            hideLoader(); // Turn loader overlay OFF if record is missing
+            hideLoader();
             alert("Card not found in your private vault.");
         }
     } catch (err) {
-        hideLoader(); // Unlock screen if execution breaks
+        hideLoader(); 
         console.error(err);
         alert("Load operation failed: " + err.message);
     }
 }
 
-// Helper to make sure the slider bars and numbers move to the saved positions
+// --- UI Sync Utilities ---
 function updateSliderDisplays() {
-    // 1. Update Margin Sliders
     const sides = ['top', 'bottom', 'left', 'right'];
     sides.forEach(side => {
         const slider = document.getElementById(`${side}Slider`);
@@ -803,12 +663,9 @@ function updateSliderDisplays() {
         }
     });
 
-    // 2. Update Stat & Rarity Offset Sliders
     const configs = [
-        { id: 'stat1', key: 'melee' },
-        { id: 'stat2', key: 'ranged' },
-        { id: 'stat3', key: 'health' },
-        { id: 'stat4', key: 'special' },
+        { id: 'stat1', key: 'melee' }, { id: 'stat2', key: 'ranged' },
+        { id: 'stat3', key: 'health' }, { id: 'stat4', key: 'special' },
         { id: 'rarity', key: 'rarity' }
     ];
 
@@ -825,32 +682,20 @@ function updateSliderDisplays() {
     });
 }
 
-// Helper to get auth object
-function getAuth() {
-    return {
-        user: document.getElementById('vaultUser').value,
-        pass: document.getElementById('vaultPass').value
-    };
-}
-
-// --- Global UI Loading Helpers ---
 function showLoader(message = "Processing...") {
     const modal = document.getElementById('loadingModal');
     const text = document.getElementById('loadingText');
     if (modal && text) {
         text.textContent = message;
-        modal.style.display = 'flex'; // Shows the overlay centering items
+        modal.style.display = 'flex'; 
     }
 }
 
 function hideLoader() {
     const modal = document.getElementById('loadingModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
+    if (modal) modal.style.display = 'none';
 }
 
-// --- SPA Tab Management Switcher ---
 function switchTab(targetTab) {
     const studioDiv = document.getElementById('tabStudio');
     const factoryDiv = document.getElementById('tabFactory');
@@ -860,18 +705,12 @@ function switchTab(targetTab) {
     if (targetTab === 'studio') {
         studioDiv.style.display = 'flex';
         factoryDiv.style.display = 'none';
-        
-        // Visual indicator adjustments
         studioBtn.style.backgroundColor = '#E88E57';
         factoryBtn.style.backgroundColor = '#444';
     } else if (targetTab === 'factory') {
         studioDiv.style.display = 'none';
         factoryDiv.style.display = 'flex';
-        
-        // Visual indicator adjustments
         studioBtn.style.backgroundColor = '#444';
         factoryBtn.style.backgroundColor = '#7289da';
     }
 }
-
-init();
