@@ -110,7 +110,7 @@ select, input[type="number"], input[type="file"] {
 }
 
 /* Fine-tune the Canvas margin now that it's in a column */
-#cardCanvas {
+#cardCanvas, #factoryCanvas {
     margin-top: auto;
     margin-bottom: auto;
     max-width: 100%;
