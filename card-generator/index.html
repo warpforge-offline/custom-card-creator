@@ -193,12 +193,18 @@
                 <label>Right: <span id="rightVal">8</span>%</label>
                 <input type="range" id="rightSlider" min="0" max="40" value="8">
             </div>
-
-
-
             
         <div class="control-group cloud-section">
             <h3>Cloud Vault</h3>
+
+            <div class="control-group" style="margin-top: 15px; border-top: 1px dashed #444; padding-top: 15px;">
+                <label>Contribute Community Frame</label>
+                <input type="file" id="customFrameInput" accept="image/png" style="font-size: 12px; margin-bottom: 8px;">
+                <button onclick="uploadCustomFrame('customFrameInput')" class="primary-btn" style="background-color: #7289da; padding: 6px 12px; font-size: 13px;">
+                    Publish Frame Globally
+                </button>
+                <small class="help-text">The frame will be available for all users.</small>
+            </div>
 
             <div class="control-group" style="margin-bottom: 10px;">
                 <input type="text" id="vaultCardName" placeholder="Card Name">
@@ -208,15 +214,16 @@
                 <input type="text" id="vaultUser" placeholder="Username">
                 <input type="password" id="vaultPass" placeholder="Password">
             </div>
+            
             <div class="button-row" style="display: flex; gap: 10px; margin-top: 10px;">
-                <button id="saveBtn" style="display: none;" onclick="saveCardToCloud()" class="primary-btn" style="background-color: #43b581; flex: 1;">
+                <button id="saveBtn" onclick="saveCardToCloud()" class="primary-btn" style="display: none; background-color: #43b581; flex: 1;">
                     Save to Cloud
                 </button>
-                <button id="loadBtn" style="display: none;" onclick="loadCardFromCloud()" class="primary-btn" style="background-color: #faa61a; flex: 1;">
+                <button id="loadBtn" onclick="loadCardFromCloud()" class="primary-btn" style="display: none; background-color: #faa61a; flex: 1;">
                     Load by Name
                 </button>
             </div>
-            <small class="help-text">Type a <strong>Card Name</strong> above to save or retrieve it.</small>
+            <small class="help-text">The card will be available only to you.</small>
         </div>
 
         <button id="downloadBtn" class="primary-btn">Download PNG</button>

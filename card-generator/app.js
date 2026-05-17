@@ -1,65 +1,9 @@
 const canvas = document.getElementById('cardCanvas');
 const ctx = canvas.getContext('2d');
 
-// --- Configuration / "Database" ---
-const frameLibrary = {
-    chaos: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    dark_angels: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    demons: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    eldars: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    genestealers: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    imperial_guard: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    iron_hands: {
-        troop: ["1"],
-        stratagem: []
-    },
-    mechanicus: {
-        troop: ["1"],
-        stratagem: []
-    },
-    necrons: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    orks: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    sisters: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    tau: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    ultramarines: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    },
-    wolves: {
-        troop: ["1", "2", "3", "4"],
-        stratagem: ["1", "2", "3", "4"]
-    }
-};
+// --- Configuration ---
+// --- Dinamycally populated from a DB configuration value
+let frameLibrary = {};
 
 // Adjust these percentages independently to fit your specific frame design
 let cardMargins = {
@@ -102,10 +46,15 @@ let statPositions = {
 };
 
 // --- Initialization ---
-function init() {
+async function init() {
     setupMarginSliders();
     setupStatSliders();
     setupAuthListeners();
+    
+    showLoader("Fetching frame library...");
+    await fetchLibraryConfig();
+    hideLoader();
+
     applyTypeDefaults();
     updateRarityImage();
     updateFilters();
@@ -269,6 +218,30 @@ function applyTypeDefaults() {
 
     // 3. Redraw the canvas
     drawCard();
+}
+
+async function fetchLibraryConfig() {
+    try {
+        const response = await fetch('/api/vault', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'load',
+                payload: {
+                    collectionName: 'warpforge_global_config',
+                    filter: "config_key == 'frame_library'",
+                    outputFields: ["config_value"]
+                },
+                auth: { user: "guest", pass: "guest" } // Safe context workaround since query is public config
+            })
+        });
+        const resJson = await response.json();
+        if (resJson && resJson.data && resJson.data.length > 0) {
+            frameLibrary = JSON.parse(resJson.data[0].config_value);
+        }
+    } catch(e) {
+        console.error("Config load failed, fallback applied", e);
+    }
 }
 
 function updateRarityImage() {
@@ -651,6 +624,46 @@ async function saveCardToCloud() {
         console.error(err);
         alert("Save operation failed: " + err.message);
     }
+}
+
+async function uploadCustomFrame(fileInputId) {
+    const file = document.getElementById(fileInputId).files[0];
+    if (!file) return alert("Please select a PNG frame image file first.");
+
+    const user = document.getElementById('vaultUser').value.trim();
+    const pass = document.getElementById('vaultPass').value.trim();
+    if (!user || !pass) return alert("Please fill out your Vault credentials to authorize a frame submission.");
+
+    showLoader("Uploading shared frame asset...");
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const res = await fetch('/api/upload-frame', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: e.target.result,
+                    faction: factionSelect.value,
+                    type: typeSelect.value,
+                    auth: getAuth()
+                })
+            });
+            const data = await res.json();
+            hideLoader();
+
+            if (data.success) {
+                alert(`Success! Frame added globally as variant "${data.newVariant}". Reloading configurations...`);
+                // Force hot-reload of active library maps immediately
+                init(); 
+            } else {
+                alert("Upload failed: " + data.error);
+            }
+        } catch (err) {
+            hideLoader();
+            alert("Connection error: " + err.message);
+        }
+    };
+    reader.readAsDataURL(file);
 }
 
 async function loadCardFromCloud() {
