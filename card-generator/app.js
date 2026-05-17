@@ -435,23 +435,92 @@ function setupEventListeners() {
     factoryTypeSelect?.addEventListener('change', updateFactoryFilters);
 
     // Preview the user's local file immediately on selection!
+// Preview the user's local file immediately on selection, WITH STRICT VALIDATION
     const customFrameInput = document.getElementById('customFrameInput');
     customFrameInput?.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (!file) return;
         
-        // Remove selection from the Frame gallery since they are viewing a new custom file
+        // Helper function to cleanly reset the input and canvas if validation fails
+        const resetInput = () => {
+            customFrameInput.value = ""; // Clear the bad file
+            factoryCtx?.clearRect(0, 0, factoryCanvas.width, factoryCanvas.height);
+            updateFactoryFilters(); // Re-select the top gallery item
+        };
+
+        if (!file) return resetInput();
+
+        // 1. Validation: File Type
+        if (file.type !== "image/png") {
+            alert("Upload rejected: The frame must be a PNG file.");
+            return resetInput();
+        }
+
+        // Remove selection from the gallery since they are viewing a new custom file
         document.querySelectorAll('#factoryGallery .thumbnail').forEach(t => t.classList.remove('active'));
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            factoryPreviewImage.removeAttribute('crossOrigin'); // Strip CORS for local file
-            factoryPreviewImage.onload = drawFactoryCanvas;
-            factoryPreviewImage.src = event.target.result;
+            const base64Data = event.target.result;
+            const img = new Image();
+            
+            img.onload = () => {
+                const width = img.naturalWidth;
+                const height = img.naturalHeight;
+
+                // 2. Validation: Height Constraint
+                if (height < 900 || height > 1000) {
+                    alert(`Upload rejected: Frame height must be between 900px and 1000px. Your image is ${height}px tall.`);
+                    return resetInput();
+                }
+
+                // 3. Validation: Aspect Ratio Constraint
+                const ratio = width / height;
+                const targetRatio = 0.68;
+                const tolerance = 0.03; 
+                if (Math.abs(ratio - targetRatio) > tolerance) {
+                    alert(`Upload rejected: Invalid aspect ratio. Target is ~0.68, but your image is ${(ratio).toFixed(2)} (${width}x${height}).`);
+                    return resetInput();
+                }
+
+                // 4. Validation: Transparency Check
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = width;
+                offCanvas.height = height;
+                const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+                offCtx.drawImage(img, 0, 0);
+
+                const imageData = offCtx.getImageData(0, 0, width, height).data;
+                let hasTransparency = false;
+
+                for (let i = 3; i < imageData.length; i += 4) {
+                    if (imageData[i] < 255) {
+                        hasTransparency = true;
+                        break; 
+                    }
+                }
+
+                if (!hasTransparency) {
+                    alert("Upload rejected: Your image has no transparency. A frame must have a transparent hole for the card art to show through!");
+                    return resetInput();
+                }
+
+                // ==========================================
+                // ALL VALIDATIONS PASSED! Show the preview.
+                // ==========================================
+                factoryPreviewImage.removeAttribute('crossOrigin'); 
+                factoryPreviewImage.onload = drawFactoryCanvas;
+                factoryPreviewImage.src = base64Data;
+            };
+            
+            img.onerror = () => {
+                alert("Upload rejected: File is corrupt or not a valid image format.");
+                resetInput();
+            };
+            
+            img.src = base64Data;
         };
         reader.readAsDataURL(file);
     });
-}
 
 function setupAuthListeners() {
     const authInputs = ['vaultUser', 'vaultPass'];
@@ -547,156 +616,62 @@ async function saveCardToCloud() {
 }
 
 async function uploadCustomFrame(fileInputId) {
-    console.log("--- STARTING FRAME UPLOAD VALIDATION ---");
-    
     const fileInput = document.getElementById(fileInputId);
     const file = fileInput?.files[0];
     
-    console.log("1. File Object Captured:", file ? "Yes" : "No", file);
-
-    if (!file) {
-        console.warn("❌ FAILED: No file selected.");
-        return alert("Please select a PNG frame image file first.");
-    }
-
-    console.log(`2. File Metadata -> Name: ${file.name} | Type: ${file.type} | Size: ${file.size} bytes`);
-
-    // Validation 1: File Type
-    if (file.type !== "image/png") {
-        console.warn(`❌ FAILED: Wrong file type. Expected 'image/png', got '${file.type}'`);
-        return alert(`Upload rejected: The frame must be a PNG file. (Detected: ${file.type})`);
-    } else {
-        console.log("✅ PASSED: File is a PNG.");
-    }
+    // If there is no file, it means they haven't selected one, or it was rejected by the input validation
+    if (!file) return alert("Please select a valid PNG frame image file first.");
 
     const user = document.getElementById('factoryUser').value.trim();
     const pass = document.getElementById('factoryPass').value.trim();
-    if (!user || !pass) {
-        console.warn("❌ FAILED: Missing User Credentials.");
-        return alert("Please fill out your credentials to authorize a frame submission.");
-    }
+    if (!user || !pass) return alert("Please fill out your credentials to authorize a frame submission.");
 
     const targetFaction = document.getElementById('factoryFactionSelect').value;
     const targetType = document.getElementById('factoryTypeSelect').value;
-    console.log(`3. Target -> Faction: ${targetFaction} | Type: ${targetType}`);
 
-    showLoader("Validating and uploading frame...");
+    showLoader("Uploading frame directly to Vault...");
     
     const reader = new FileReader();
-    reader.onload = (e) => {
-        console.log("4. FileReader loaded file into memory successfully.");
+    reader.onload = async (e) => {
         const base64Data = e.target.result;
         
-        const img = new Image();
-        img.onload = async () => {
-            const width = img.naturalWidth;
-            const height = img.naturalHeight;
-            console.log(`5. Image Decoded -> Dimensions: ${width}px by ${height}px`);
-
-            // Validation 2: Height Constraint
-            if (height < 900 || height > 1000) {
-                console.warn(`❌ FAILED: Height ${height}px is out of bounds (900-1000).`);
-                hideLoader();
-                return alert(`Upload rejected: Frame height must be between 900px and 1000px. Your image is ${height}px tall.`);
-            } else {
-                console.log("✅ PASSED: Height is within bounds.");
-            }
-
-            // Validation 3: Aspect Ratio Constraint
-            const ratio = width / height;
-            const targetRatio = 0.68;
-            const tolerance = 0.03; 
-            console.log(`6. Checking Ratio -> Computed: ${ratio.toFixed(4)} | Target: ${targetRatio} | Tolerance: ±${tolerance}`);
-            
-            if (Math.abs(ratio - targetRatio) > tolerance) {
-                console.warn(`❌ FAILED: Aspect Ratio ${ratio.toFixed(4)} deviates too far from 0.68.`);
-                hideLoader();
-                return alert(`Upload rejected: Invalid aspect ratio. Target is ~0.68, but your image is ${(ratio).toFixed(2)} (${width}x${height}).`);
-            } else {
-                console.log("✅ PASSED: Aspect ratio is acceptable.");
-            }
-
-            // Validation 4: Transparency Check
-            console.log("7. Starting Deep Pixel Transparency Scan...");
-            const offCanvas = document.createElement('canvas');
-            offCanvas.width = width;
-            offCanvas.height = height;
-            const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
-            offCtx.drawImage(img, 0, 0);
-
-            const imageData = offCtx.getImageData(0, 0, width, height).data;
-            let hasTransparency = false;
-            let transparentPixelCount = 0;
-
-            for (let i = 3; i < imageData.length; i += 4) {
-                // If Alpha is less than 255, it's not a completely solid pixel
-                if (imageData[i] < 255) {
-                    hasTransparency = true;
-                    transparentPixelCount++;
-                    // We just need to find a few to prove it's transparent, then we can break to save memory
-                    if (transparentPixelCount > 5) break; 
-                }
-            }
-
-            console.log(`8. Scan Results -> Transparent Pixels Found: ${hasTransparency ? "Yes" : "No"}`);
-
-            if (!hasTransparency) {
-                console.warn("❌ FAILED: Image is 100% solid/opaque. No transparency detected.");
-                hideLoader();
-                return alert("Upload rejected: Your image has no transparency. A frame must have a transparent hole for the card art to show through!");
-            } else {
-                console.log("✅ PASSED: Transparency confirmed.");
-            }
-
-            // ==========================================
-            console.log("🎉 ALL VALIDATIONS PASSED! EXECUTING API UPLOAD... 🎉");
-            // ==========================================
-            try {
-                const res = await fetch('/api/upload-frame.js', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        image: base64Data,
-                        faction: targetFaction, 
-                        type: targetType,       
-                        auth: { user, pass }    
-                    })
-                });
-                const data = await res.json();
-                hideLoader();
-
-                if (data.success) {
-                    console.log("API Success Response:", data);
-                    alert(`Success! Frame added globally as variant "${data.newVariant}". Returning to workspace.`);
-                    await fetchLibraryConfig();
-                    
-                    document.getElementById(fileInputId).value = "";
-                    document.getElementById('factoryUser').value = "";
-                    document.getElementById('factoryPass').value = "";
-                    
-                    updateFilters(); 
-                    switchTab('studio');
-                } else {
-                    console.error("API Upload Error:", data.error);
-                    alert("Upload failed: " + data.error);
-                }
-            } catch (err) {
-                hideLoader();
-                console.error("Network Fetch Error:", err);
-                alert("Connection error: " + err.message);
-            }
-        };
-        
-        img.onerror = (err) => {
+        try {
+            const res = await fetch('/api/upload-frame.js', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image: base64Data,
+                    faction: targetFaction, 
+                    type: targetType,       
+                    auth: { user, pass }    
+                })
+            });
+            const data = await res.json();
             hideLoader();
-            console.error("❌ FAILED: Browser could not decode the image data.", err);
-            alert("Upload rejected: File is corrupt or not a valid image format.");
-        };
-        
-        img.src = base64Data;
+
+            if (data.success) {
+                alert(`Success! Frame added globally as variant "${data.newVariant}". Returning to workspace.`);
+                await fetchLibraryConfig();
+                
+                // Clear inputs
+                fileInput.value = "";
+                document.getElementById('factoryUser').value = "";
+                document.getElementById('factoryPass').value = "";
+                
+                // Refresh UI and bounce back to Studio
+                updateFilters(); 
+                switchTab('studio');
+            } else {
+                alert("Upload failed: " + data.error);
+            }
+        } catch (err) {
+            hideLoader();
+            alert("Connection error: " + err.message);
+        }
     };
     reader.readAsDataURL(file);
 }
+
 async function loadCardFromCloud() {
     const cardName = document.getElementById('cardNameInput').value;
     if (!cardName || cardName.trim() === "") return alert("Please enter a card name to load.");
