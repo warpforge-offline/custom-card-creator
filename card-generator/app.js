@@ -5,13 +5,23 @@ const ctx = canvas.getContext('2d');
 let frameLibrary = {};
 let cardMargins = { top: 0.08, bottom: 0.15, left: 0.08, right: 0.08 };
 
-// --- Elements ---
+// --- Card Studio elements ---
 const factionSelect = document.getElementById('factionSelect');
 const typeSelect = document.getElementById('typeSelect');
 const variantSelect = document.getElementById('variantSelect');
 const galleryContainer = document.getElementById('frameGallery');
 
-// --- State ---
+// --- Frame Factory Elements & State ---
+const factoryCanvas = document.getElementById('factoryCanvas');
+const factoryCtx = factoryCanvas?.getContext('2d');
+const factoryFactionSelect = document.getElementById('factoryFactionSelect');
+const factoryTypeSelect = document.getElementById('factoryTypeSelect');
+const factoryGallery = document.getElementById('factoryGallery');
+
+let factoryPreviewImage = new Image();
+factoryPreviewImage.crossOrigin = "anonymous";
+
+// --- Card Studio State ---
 let artImage = new Image();
 artImage.crossOrigin = "anonymous";
 
@@ -56,6 +66,7 @@ async function init() {
     applyTypeDefaults();
     updateRarityImage();
     updateFilters();
+    updateFactoryFilters();
 }
 
 // --- DOM Manipulation & Rendering ---
@@ -418,6 +429,28 @@ function setupEventListeners() {
         link.href = canvas.toDataURL("image/png");
         link.click();
     };
+
+    // --- Frame Factory Listeners ---
+    factoryFactionSelect?.addEventListener('change', updateFactoryFilters);
+    factoryTypeSelect?.addEventListener('change', updateFactoryFilters);
+
+    // Preview the user's local file immediately on selection!
+    const customFrameInput = document.getElementById('customFrameInput');
+    customFrameInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Remove selection from the Frame gallery since they are viewing a new custom file
+        document.querySelectorAll('#factoryGallery .thumbnail').forEach(t => t.classList.remove('active'));
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            factoryPreviewImage.removeAttribute('crossOrigin'); // Strip CORS for local file
+            factoryPreviewImage.onload = drawFactoryCanvas;
+            factoryPreviewImage.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 function setupAuthListeners() {
@@ -712,5 +745,56 @@ function switchTab(targetTab) {
         factoryDiv.style.display = 'flex';
         studioBtn.style.backgroundColor = '#444';
         factoryBtn.style.backgroundColor = '#7289da';
+    }
+}
+
+// --- Frame Factory Isolated Logic ---
+function updateFactoryFilters() {
+    if (!factoryFactionSelect || !factoryGallery) return;
+    
+    const faction = factoryFactionSelect.value;
+    const type = factoryTypeSelect.value === 'warlord' ? 'troop' : factoryTypeSelect.value;
+    const variants = frameLibrary[faction]?.[type] || [];
+    
+    factoryGallery.innerHTML = '';
+
+    variants.forEach(v => {
+        const vKey = v.toLowerCase().replace(/\s+/g, '_');
+        const cloudBaseUrl = `https://res.cloudinary.com/dhny3c6gr/image/upload/warpforge_frames`;
+        const path = `${cloudBaseUrl}/${faction}/${type}_${vKey}.png`;
+
+        const thumb = document.createElement('img');
+        thumb.src = path;
+        thumb.className = 'thumbnail';
+        thumb.crossOrigin = "anonymous"; 
+        thumb.onclick = () => {
+            // Highlights active thumbnail in the factory sidebar
+            document.querySelectorAll('#factoryGallery .thumbnail').forEach(t => t.classList.remove('active'));
+            thumb.classList.add('active');
+            
+            // Draw this existing frame to the factory canvas to see what already exists
+            factoryPreviewImage.crossOrigin = "anonymous"; 
+            factoryPreviewImage.onload = drawFactoryCanvas;
+            factoryPreviewImage.src = path;
+        };
+        factoryGallery.appendChild(thumb);
+    });
+
+    if (variants.length > 0) {
+        factoryGallery.firstChild.click();
+    } else {
+        factoryCtx?.clearRect(0, 0, factoryCanvas.width, factoryCanvas.height);
+    }
+}
+
+function drawFactoryCanvas() {
+    if (!factoryCtx || !factoryCanvas) return;
+    
+    factoryCanvas.width = factoryPreviewImage.naturalWidth || 800;
+    factoryCanvas.height = factoryPreviewImage.naturalHeight || 1120;
+    factoryCtx.clearRect(0, 0, factoryCanvas.width, factoryCanvas.height);
+    
+    if (factoryPreviewImage.complete && factoryPreviewImage.naturalWidth !== 0) {
+        factoryCtx.drawImage(factoryPreviewImage, 0, 0, factoryCanvas.width, factoryCanvas.height);
     }
 }

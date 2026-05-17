@@ -16,8 +16,7 @@
         </nav>
     </header>
 
-    <div class="app-container">
-        
+  <div class="app-container">        
         <div id="tabStudio" class="tab-content" style="display: flex; width: 100%; gap: 20px;">
             <aside class="sidebar">
                 <h2 class="column-header">Settings</h2>
@@ -213,7 +212,7 @@
         </div>
 
 
-        <div id="tabFactory" class="tab-content" style="display: none; width: 100%; justify-content: center;">
+        <div id="tabFactory" class="tab-content" style="display: none; width: 100%; gap: 20px;">
             <aside class="sidebar" style="width: 450px; max-width: 100%;">
                 <h2 class="column-header">Global Asset Publisher</h2>
                 
@@ -263,6 +262,16 @@
                 <button onclick="uploadCustomFrame('customFrameInput')" class="primary-btn" style="background-color: #7289da; width: 100%; margin-top: 15px; font-weight: bold;">
                     Publish Frame Globally
                 </button>
+            </aside>
+
+            <main class="editor-view">
+                <h2 class="column-header">Upload Preview</h2>
+                <canvas id="factoryCanvas"></canvas>
+            </main>
+
+            <aside class="gallery-sidebar">
+                <h2 class="column-header">Existing Library</h2>
+                <div id="factoryGallery" class="gallery-grid"></div>
             </aside>
         </div>
 
