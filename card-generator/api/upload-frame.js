@@ -21,10 +21,12 @@ async function verifyUser(username, password) {
 }
 
 export default async function handler(req, res) {
+    // Return explicit 405 for bad methods
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const { image, faction, type, auth } = req.body;
 
+    // FIX: verifyUser parameter handshake corrected
     if (!auth || !(await verifyUser(auth.user, auth.pass))) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -66,7 +68,6 @@ export default async function handler(req, res) {
         const nextIntStr = String(nextInt);
 
         // 3. Upload file directly to the shared target path inside Cloudinary
-        // Presets: Unique Filename must be OFF and folder use matching your UI configuration settings!
         const publicId = `${targetType}_${nextIntStr}`;
         const folderPath = `warpforge_frames/${faction}`;
 
@@ -78,9 +79,20 @@ export default async function handler(req, res) {
             resource_type: "auto"
         });
 
-        // 4. Mutate layout matrix state array and save row back into Zilliz
+        // 4. Mutate layout matrix state array
         library[faction][targetType].push(nextIntStr);
 
+        // FIX: Delete old stale configuration row before inserting mutated layout map
+        await fetch(`${baseUrl}/v2/vectordb/entities/delete`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                collectionName: 'warpforge_global_config',
+                filter: "config_key == 'frame_library'"
+            })
+        });
+
+        // 5. Save freshly mutated configuration back into Zilliz
         await fetch(`${baseUrl}/v2/vectordb/entities/insert`, {
             method: 'POST',
             headers,

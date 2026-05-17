@@ -638,7 +638,7 @@ async function uploadCustomFrame(fileInputId) {
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
-            const res = await fetch('/api/upload-frame', {
+            const res = await fetch('/api/upload-frame.js', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
