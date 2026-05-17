@@ -521,6 +521,7 @@ function setupEventListeners() {
         };
         reader.readAsDataURL(file);
     });
+}
 
 function setupAuthListeners() {
     const authInputs = ['vaultUser', 'vaultPass'];
