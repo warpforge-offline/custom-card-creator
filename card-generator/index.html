@@ -11,7 +11,7 @@
     <header class="app-header">
         <h1>Warpforge Community Vault</h1>
         <nav class="tab-navigation" style="display: flex; gap: 10px; margin-top: 10px; justify-content: center;">
-            <button id="tabBtnStudio" onclick="switchTab('studio')" class="primary-btn" style="background-color: #E88E57; font-weight: bold;">Card Studio</button>
+            <button id="tabBtnStudio" onclick="switchTab('studio')" class="primary-btn" style="background-color: #444; font-weight: bold;">Card Studio</button>
             <button id="tabBtnFactory" onclick="switchTab('factory')" class="primary-btn" style="background-color: #444;">Frame Factory</button>
         </nav>
     </header>
@@ -184,9 +184,11 @@
                 <div class="control-group cloud-section">
                     <h3>Personal Vault</h3>
                     <div class="control-group" style="margin-bottom: 10px;">
+                        <label>Card Name</label>
                         <input type="text" id="vaultCardName" placeholder="Card Name">
                     </div>
                     <div class="auth-box">
+                        <label>Credentials</label>
                         <input type="text" id="vaultUser" placeholder="Username">
                         <input type="password" id="vaultPass" placeholder="Password">
                     </div>
@@ -250,27 +252,27 @@
                 <div class="control-group">
                     <label>Select Border File Asset (PNG Only)</label>
                     <input type="file" id="customFrameInput" accept="image/png" style="font-size: 14px; margin-bottom: 8px;">
-                    <small class="help-text">Frames must be transparent template PNGs matching baseline border dimensions.</small>
+                    <small class="help-text">Frames must be transparent template PNGs matching baseline border dimensions. An aspect ratio close to 17:25 (0.68) and dimensions 650x956 pixels are recommended for optimal results.</small>
                 </div>
 
-                <div class="auth-box" style="margin-top: 20px; border-top: 1px dashed #444; padding-top: 15px;">
-                    <label>Admin Credentials Authorization</label>
-                    <input type="text" id="factoryUser" placeholder="Username" style="margin-top: 5px;">
+
+                <div class="auth-box">
+                    <label>Credentials</label>
+                    <input type="text" id="factoryUser" placeholder="Username" >
                     <input type="password" id="factoryPass" placeholder="Password">
                 </div>
-
-                <button onclick="uploadCustomFrame('customFrameInput')" class="primary-btn" style="background-color: #7289da; width: 100%; margin-top: 15px; font-weight: bold;">
-                    Publish Frame Globally
-                </button>
+                <div class="button-row" style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button onclick="uploadCustomFrame('customFrameInput')" class="primary-btn" style="background-color: #7289da; width: 100%; margin-top: 15px; font-weight: bold;">Publish Frame Globally</button>
+                </div>
             </aside>
 
             <main class="editor-view">
-                <h2 class="column-header">Upload Preview</h2>
+                <h2 class="column-header">Preview</h2>
                 <canvas id="factoryCanvas"></canvas>
             </main>
 
             <aside class="gallery-sidebar">
-                <h2 class="column-header">Existing Library</h2>
+                <h2 class="column-header">  Frame Gallery</h2>
                 <div id="factoryGallery" class="gallery-grid"></div>
             </aside>
         </div>
