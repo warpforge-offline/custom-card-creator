@@ -550,6 +550,11 @@ async function uploadCustomFrame(fileInputId) {
     const file = document.getElementById(fileInputId).files[0];
     if (!file) return alert("Please select a PNG frame image file first.");
 
+    // 1. Validation: File Type
+    if (file.type !== "image/png") {
+        return alert("Upload rejected: The frame must be a PNG file.");
+    }
+
     const user = document.getElementById('factoryUser').value.trim();
     const pass = document.getElementById('factoryPass').value.trim();
     if (!user || !pass) return alert("Please fill out your credentials to authorize a frame submission.");
@@ -557,40 +562,94 @@ async function uploadCustomFrame(fileInputId) {
     const targetFaction = document.getElementById('factoryFactionSelect').value;
     const targetType = document.getElementById('factoryTypeSelect').value;
 
-    showLoader("Uploading shared frame asset...");
+    showLoader("Validating and uploading frame...");
+    
     const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const res = await fetch('/api/upload-frame.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image: e.target.result,
-                    faction: targetFaction, 
-                    type: targetType,       
-                    auth: { user, pass }    
-                })
-            });
-            const data = await res.json();
-            hideLoader();
+    reader.onload = (e) => {
+        const base64Data = e.target.result;
+        
+        // Load the image into memory to check its pixels and dimensions
+        const img = new Image();
+        img.onload = async () => {
+            const width = img.naturalWidth;
+            const height = img.naturalHeight;
 
-            if (data.success) {
-                alert(`Success! Frame added globally as variant "${data.newVariant}". Returning to workspace.`);
-                await fetchLibraryConfig();
-                
-                document.getElementById(fileInputId).value = "";
-                document.getElementById('factoryUser').value = "";
-                document.getElementById('factoryPass').value = "";
-                
-                updateFilters(); 
-                switchTab('studio');
-            } else {
-                alert("Upload failed: " + data.error);
+            // 2. Validation: Height Constraint
+            if (height < 900 || height > 1000) {
+                hideLoader();
+                return alert(`Upload rejected: Frame height must be between 900px and 1000px. Your image is ${height}px tall.`);
             }
-        } catch (err) {
-            hideLoader();
-            alert("Connection error: " + err.message);
-        }
+
+            // 3. Validation: Aspect Ratio Constraint
+            const ratio = width / height;
+            const targetRatio = 0.68;
+            const tolerance = 0.03; // Allows 0.65 to 0.71
+            if (Math.abs(ratio - targetRatio) > tolerance) {
+                hideLoader();
+                return alert(`Upload rejected: Invalid aspect ratio. Target is ~0.68, but your image is ${(ratio).toFixed(2)} (${width}x${height}).`);
+            }
+
+            // 4. Validation: Transparency Check
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = width;
+            offCanvas.height = height;
+            const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+            offCtx.drawImage(img, 0, 0);
+
+            // Get the raw RGBA pixel data array
+            const imageData = offCtx.getImageData(0, 0, width, height).data;
+            let hasTransparency = false;
+
+            // Loop through the array. Every 4th value is the Alpha (Opacity) channel.
+            // 255 is fully solid. Anything less means transparency exists.
+            for (let i = 3; i < imageData.length; i += 4) {
+                if (imageData[i] < 255) {
+                    hasTransparency = true;
+                    break; // Stop searching as soon as we find a single transparent pixel
+                }
+            }
+
+            if (!hasTransparency) {
+                hideLoader();
+                return alert("Upload rejected: Your image has no transparency. A frame must have a transparent hole for the card art to show through!");
+            }
+
+            // ==========================================
+            // ALL VALIDATIONS PASSED! Proceed to upload.
+            // ==========================================
+            try {
+                const res = await fetch('/api/upload-frame.js', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image: base64Data,
+                        faction: targetFaction, 
+                        type: targetType,       
+                        auth: { user, pass }    
+                    })
+                });
+                const data = await res.json();
+                hideLoader();
+
+                if (data.success) {
+                    alert(`Success! Frame added globally as variant "${data.newVariant}". Returning to workspace.`);
+                    await fetchLibraryConfig();
+                    
+                    document.getElementById(fileInputId).value = "";
+                    document.getElementById('factoryUser').value = "";
+                    document.getElementById('factoryPass').value = "";
+                    
+                    updateFilters(); 
+                    switchTab('studio');
+                } else {
+                    alert("Upload failed: " + data.error);
+                }
+            } catch (err) {
+                hideLoader();
+                alert("Connection error: " + err.message);
+            }
+        };
+        img.src = base64Data;
     };
     reader.readAsDataURL(file);
 }
