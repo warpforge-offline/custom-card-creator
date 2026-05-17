@@ -8,238 +8,146 @@
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Merriweather:wght@400;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- 1. Main Page Header -->
-<header class="app-header">
-        <h1>Warpforge Community Card Creator</h1>
+    <header class="app-header">
+        <h1>Warpforge Community Vault</h1>
+        <nav class="tab-navigation" style="display: flex; gap: 10px; margin-top: 10px; justify-content: center;">
+            <button id="tabBtnStudio" onclick="switchTab('studio')" class="primary-btn" style="background-color: #E88E57; font-weight: bold;">Card Studio</button>
+            <button id="tabBtnFactory" onclick="switchTab('factory')" class="primary-btn" style="background-color: #444;">Frame Factory</button>
+        </nav>
     </header>
 
     <div class="app-container">
-        <!-- 2. Left Column: Settings -->
-        <aside class="sidebar">
-            <h2 class="column-header">Settings</h2>
-            
-            <div class="control-group">
-                <label>Faction</label>
-                <select id="factionSelect">
-                    <option value="chaos">Chaos</option>
-                    <option value="dark_angels">Dark Angels</option>
-                    <option value="demons">Demons</option>
-                    <option value="eldars">Eldars</option>
-                    <option value="genestealers">Genestealers</option>
-                    <option value="imperial_guard">Imperial Guard</option>
-					<option value="iron_hands">Iron Hands</option>
-					<option value="mechanicus">Mechanicus</option>
-                    <option value="necrons">Necrons</option>
-                    <option value="orks">Orks</option>
-                    <option value="sisters">Sisters</option>
-                    <option value="tau">Tau</option>
-                    <option value="tyranids">Tyranids</option>
-                    <option value="ultramarines">ultramarines</option>
-                    <option value="wolves">Wolves</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label>Card Type</label>
-                <select id="typeSelect">
-                    <option value="warlord">Warlord</option>
-                    <option value="troop">Troop</option>
-                    <option value="stratagem">Stratagem</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label>Select Frame Variant</label>
-                <select id="variantSelect"></select>
-            </div>
-
-            <!-- Card Name -->
-            <div class="control-group">
-                <label>Card Name</label>
-                <input type="text" id="cardNameInput" placeholder="Master of Ordnance" value="New Card">
-            </div>
-
-            <!-- Rules Text (Changed ID to rulesInput) -->
-            <div class="control-group">
-                <label>Rules Text</label>
-                <textarea id="rulesInput" rows="3" placeholder="At the end of your turn..."></textarea>
-            </div>
-
-            <!-- Trait -->
-                        <div class="control-group">
-                            <label>Trait</label>
-                            <input type="text" id="traitInput" placeholder="e.g. Warlord, Vehicle, Infantry" value="Warlord">
-                        </div>
-
-        <!-- Rarity -->
-            <div class="control-group">
-                <label>Rarity</label>
-                <select id="raritySelect">
-                    <option value="common">Common</option>
-                    <option value="rare">Rare</option>
-                    <option value="epic">Epic</option>
-                    <option value="legendary">Legendary</option>
-                    <option value="special">Special</option>
-                </select>
+        
+        <div id="tabStudio" class="tab-content" style="display: flex; width: 100%; gap: 20px;">
+            <aside class="sidebar">
+                <h2 class="column-header">Settings</h2>
                 
-                <!-- Rarity Badge Fine-Tuning -->
-                <div class="offset-controls">
-                    <label>X-Offset: <span id="rarityXVal">0.0</span>%</label>
-                    <input type="range" id="rarityX" min="-5" max="5" step="0.1" value="0">
-                    
-                    <label>Y-Offset: <span id="rarityYVal">0.0</span>%</label>
-                    <input type="range" id="rarityY" min="-5" max="5" step="0.1" value="0">
+                <div class="control-group">
+                    <label>Faction</label>
+                    <select id="factionSelect">
+                        <option value="chaos">Chaos</option>
+                        <option value="orks">Orks</option>
+                        </select>
                 </div>
-            </div>
 
-<!-- Stats Positioning -->
-            <div class="control-group">
-                <h3>Stats & Positioning</h3>
-
-                <hr>
-
-                <!-- 1. Energy Stat -->
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                    <input type="checkbox" id="energyToggle" checked>
-                    <label for="energyToggle" style="margin: 0; font-weight: bold; cursor: pointer;">Enable Energy</label>
+                <div class="control-group">
+                    <label>Card Type</label>
+                    <select id="typeSelect">
+                        <option value="warlord">Warlord</option>
+                        <option value="troop">Troop</option>
+                        <option value="stratagem">Stratagem</option>
+                    </select>
                 </div>
-                <div id="energyControlsContainer">
-                    <label>Energy Value</label>
-                    <input type="number" id="stat4" value="3">
-                    <div class="offset-controls">
-                        <label>X-Offset: <span id="stat4XVal">0.0</span>%</label>
-                        <input type="range" id="stat4X" min="-5" max="5" step="0.1" value="0">
-                        <label>Y-Offset: <span id="stat4YVal">0.0</span>%</label>
-                        <input type="range" id="stat4Y" min="-5" max="5" step="0.1" value="0">
+
+                <div class="control-group">
+                    <label>Select Frame Variant</label>
+                    <select id="variantSelect"></select>
+                </div>
+
+                <div class="control-group">
+                    <label>Card Name</label>
+                    <input type="text" id="cardNameInput" placeholder="Master of Ordnance" value="New Card">
+                </div>
+
+                <div class="control-group">
+                    <label>Rules Text</label>
+                    <textarea id="rulesInput" rows="3" placeholder="At the end of your turn..."></textarea>
+                </div>
+
+                <div class="control-group">
+                    <label>Trait</label>
+                    <input type="text" id="traitInput" placeholder="e.g. Warlord, Vehicle" value="Warlord">
+                </div>
+
+                <div class="control-group">
+                    <label>Upload Art Image</label>
+                    <input type="file" id="artInput" accept="image/*">
+                </div>
+
+                <div class="control-group cloud-section">
+                    <h3>Personal Vault</h3>
+                    <div class="control-group" style="margin-bottom: 10px;">
+                        <input type="text" id="vaultCardName" placeholder="Card Name">
                     </div>
-                </div>
-
-                <hr>
-                
-                <!-- 2. Melee Attack Stat -->
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                    <input type="checkbox" id="meleeToggle" checked>
-                    <label for="meleeToggle" style="margin: 0; font-weight: bold; cursor: pointer;">Enable Melee Attack</label>
-                </div>
-                <div id="meleeControlsContainer">
-                    <label>Melee Attack Value</label>
-                    <input type="number" id="stat1" value="3">
-                    <div class="offset-controls">
-                        <label>X-Offset: <span id="stat1XVal">0.0</span>%</label>
-                        <input type="range" id="stat1X" min="-5" max="5" step="0.1" value="0">
-                        <label>Y-Offset: <span id="stat1YVal">0.0</span>%</label>
-                        <input type="range" id="stat1Y" min="-5" max="5" step="0.1" value="0">
+                    <div class="auth-box">
+                        <input type="text" id="vaultUser" placeholder="Username">
+                        <input type="password" id="vaultPass" placeholder="Password">
                     </div>
-                </div>
-
-                <hr>
-
-                <!-- 3. Ranged Attack Stat -->
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                    <input type="checkbox" id="rangedToggle" checked>
-                    <label for="rangedToggle" style="margin: 0; font-weight: bold; cursor: pointer;">Enable Ranged Attack</label>
-                </div>
-                <div id="rangedControlsContainer">
-                    <label>Ranged Attack Value</label>
-                    <input type="number" id="stat2" value="3">
-                    <div class="offset-controls">
-                        <label>X-Offset: <span id="stat2XVal">0.0</span>%</label>
-                        <input type="range" id="stat2X" min="-5" max="5" step="0.1" value="0">
-                        <label>Y-Offset: <span id="stat2YVal">0.0</span>%</label>
-                        <input type="range" id="stat2Y" min="-5" max="5" step="0.1" value="0">
+                    <div class="button-row" style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button id="saveBtn" style="display: none;" onclick="saveCardToCloud()" class="primary-btn" style="background-color: #43b581; flex: 1;">Save to Cloud</button>
+                        <button id="loadBtn" style="display: none;" onclick="loadCardFromCloud()" class="primary-btn" style="background-color: #faa61a; flex: 1;">Load by Name</button>
                     </div>
+                    <small class="help-text">Cards are stored securely in your personal vault profile.</small>
                 </div>
 
-                <hr>
+                <button id="downloadBtn" class="primary-btn">Download PNG</button>
+            </aside>
 
-                <!-- 4. Health Stat -->
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                    <input type="checkbox" id="healthToggle" checked>
-                    <label for="healthToggle" style="margin: 0; font-weight: bold; cursor: pointer;">Enable Health</label>
-                </div>
-                <div id="healthControlsContainer">
-                    <label>Health Value</label>
-                    <input type="number" id="stat3" value="3">
-                    <div class="offset-controls">
-                        <label>X-Offset: <span id="stat3XVal">0.0</span>%</label>
-                        <input type="range" id="stat3X" min="-5" max="5" step="0.1" value="0">
-                        <label>Y-Offset: <span id="stat3YVal">0.0</span>%</label>
-                        <input type="range" id="stat3Y" min="-5" max="5" step="0.1" value="0">
-                    </div>
-                </div>
-            </div>
+            <main class="editor-view">
+                <h2 class="column-header">Preview</h2>
+                <canvas id="cardCanvas"></canvas>
+            </main>
 
-            <div class="control-group">
-                <label>Upload Art Image</label>
-                <!-- aria-describedby tells screen readers to read the hint text when focusing the input -->
-                <input type="file" id="artInput" accept="image/*" aria-describedby="artHelpText">
-                
-                <!-- The helper text itself -->
-                <small id="artHelpText" class="help-text">For best results, use an image with an aspect ratio close to 9:12 (0.75).</small>
-            </div>
-
-            <div class="control-group">
-                <h3>Art Image Margin Tuning</h3>
-                
-                <label>Top: <span id="topVal">8</span>%</label>
-                <input type="range" id="topSlider" min="0" max="40" value="8">
-
-                <label>Bottom: <span id="bottomVal">15</span>%</label>
-                <input type="range" id="bottomSlider" min="0" max="40" value="15">
-
-                <label>Left: <span id="leftVal">8</span>%</label>
-                <input type="range" id="leftSlider" min="0" max="40" value="8">
-
-                <label>Right: <span id="rightVal">8</span>%</label>
-                <input type="range" id="rightSlider" min="0" max="40" value="8">
-            </div>
-            
-        <div class="control-group cloud-section">
-            <h3>Cloud Vault</h3>
-
-            <div class="control-group" style="margin-top: 15px; border-top: 1px dashed #444; padding-top: 15px;">
-                <label>Contribute Community Frame</label>
-                <input type="file" id="customFrameInput" accept="image/png" style="font-size: 12px; margin-bottom: 8px;">
-                <button onclick="uploadCustomFrame('customFrameInput')" class="primary-btn" style="background-color: #7289da; padding: 6px 12px; font-size: 13px;">
-                    Publish Frame Globally
-                </button>
-                <small class="help-text">The frame will be available for all users.</small>
-            </div>
-
-            <div class="control-group" style="margin-bottom: 10px;">
-                <input type="text" id="vaultCardName" placeholder="Card Name">
-            </div>
-
-            <div class="auth-box">
-                <input type="text" id="vaultUser" placeholder="Username">
-                <input type="password" id="vaultPass" placeholder="Password">
-            </div>
-            
-            <div class="button-row" style="display: flex; gap: 10px; margin-top: 10px;">
-                <button id="saveBtn" onclick="saveCardToCloud()" class="primary-btn" style="display: none; background-color: #43b581; flex: 1;">
-                    Save to Cloud
-                </button>
-                <button id="loadBtn" onclick="loadCardFromCloud()" class="primary-btn" style="display: none; background-color: #faa61a; flex: 1;">
-                    Load by Name
-                </button>
-            </div>
-            <small class="help-text">The card will be available only to you.</small>
+            <aside class="gallery-sidebar">
+                <h2 class="column-header">Frame Gallery</h2>
+                <div id="frameGallery" class="gallery-grid"></div>
+            </aside>
         </div>
 
-        <button id="downloadBtn" class="primary-btn">Download PNG</button>
-        </aside>
 
-        <!-- 3. Middle Column: Preview -->
-        <main class="editor-view">
-            <h2 class="column-header">Preview</h2>
-            <canvas id="cardCanvas"></canvas>
-        </main>
+        <div id="tabFactory" class="tab-content" style="display: none; width: 100%; justify-content: center;">
+            <aside class="sidebar" style="width: 450px; max-width: 100%;">
+                <h2 class="column-header">Global Asset Publisher</h2>
+                
+                <p class="help-text" style="margin-bottom: 20px;">Use this interface to contribute assets directly to the shared community library pool. Publishing here expands options for all active studio cards immediately.</p>
 
-        <!-- 4. Right Column: Frame Gallery -->
-        <aside class="gallery-sidebar">
-            <h2 class="column-header">Frame Gallery</h2>
-            <div id="frameGallery" class="gallery-grid"></div>
-        </aside>
+                <div class="control-group">
+                    <label>Target Faction</label>
+                    <select id="factoryFactionSelect">
+                        <option value="chaos">Chaos</option>
+                        <option value="dark_angels">Dark Angels</option>
+                        <option value="demons">Demons</option>
+                        <option value="eldars">Eldars</option>
+                        <option value="genestealers">Genestealers</option>
+                        <option value="imperial_guard">Imperial Guard</option>
+                        <option value="iron_hands">Iron Hands</option>
+                        <option value="mechanicus">Mechanicus</option>
+                        <option value="necrons">Necrons</option>
+                        <option value="orks">Orks</option>
+                        <option value="sisters">Sisters</option>
+                        <option value="tau">Tau</option>
+                        <option value="tyranids">Tyranids</option>
+                        <option value="ultramarines">Ultramarines</option>
+                        <option value="wolves">Wolves</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Target Classification (Type)</label>
+                    <select id="factoryTypeSelect">
+                        <option value="troop">Troop / Warlord</option>
+                        <option value="stratagem">Stratagem</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Select Border File Asset (PNG Only)</label>
+                    <input type="file" id="customFrameInput" accept="image/png" style="font-size: 14px; margin-bottom: 8px;">
+                    <small class="help-text">Frames must be transparent template PNGs matching baseline border dimensions.</small>
+                </div>
+
+                <div class="auth-box" style="margin-top: 20px; border-top: 1px dashed #444; padding-top: 15px;">
+                    <label>Admin Credentials Authorization</label>
+                    <input type="text" id="factoryUser" placeholder="Username" style="margin-top: 5px;">
+                    <input type="password" id="factoryPass" placeholder="Password">
+                </div>
+
+                <button onclick="uploadCustomFrame('customFrameInput')" class="primary-btn" style="background-color: #7289da; width: 100%; margin-top: 15px; font-weight: bold;">
+                    Publish Frame Globally
+                </button>
+            </aside>
+        </div>
+
     </div>
     
     <!-- Loading Spinner-->

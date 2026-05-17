@@ -630,9 +630,14 @@ async function uploadCustomFrame(fileInputId) {
     const file = document.getElementById(fileInputId).files[0];
     if (!file) return alert("Please select a PNG frame image file first.");
 
-    const user = document.getElementById('vaultUser').value.trim();
-    const pass = document.getElementById('vaultPass').value.trim();
-    if (!user || !pass) return alert("Please fill out your Vault credentials to authorize a frame submission.");
+    // Target the specific factory authorization inputs
+    const user = document.getElementById('factoryUser').value.trim();
+    const pass = document.getElementById('factoryPass').value.trim();
+    if (!user || !pass) return alert("Please fill out your credentials to authorize a frame submission.");
+
+    // Target the specific factory layout targets
+    const targetFaction = document.getElementById('factoryFactionSelect').value;
+    const targetType = document.getElementById('factoryTypeSelect').value;
 
     showLoader("Uploading shared frame asset...");
     const reader = new FileReader();
@@ -643,18 +648,30 @@ async function uploadCustomFrame(fileInputId) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     image: e.target.result,
-                    faction: factionSelect.value,
-                    type: typeSelect.value,
-                    auth: getAuth()
+                    faction: targetFaction, // <-- Updated target parameter hook
+                    type: targetType,       // <-- Updated target parameter hook
+                    auth: { user, pass }    // <-- Updated target parameter hook
                 })
             });
             const data = await res.json();
             hideLoader();
 
             if (data.success) {
-                alert(`Success! Frame added globally as variant "${data.newVariant}". Reloading configurations...`);
-                // Force hot-reload of active library maps immediately
-                init(); 
+                alert(`Success! Frame added globally as variant "${data.newVariant}". Returning to workspace.`);
+                
+                // 1. Force reload configuration layout matrices
+                await fetchLibraryConfig();
+                
+                // 2. Clear out the upload form state parameters safely
+                document.getElementById(fileInputId).value = "";
+                document.getElementById('factoryUser').value = "";
+                document.getElementById('factoryPass').value = "";
+                
+                // 3. Clear existing dropdown sync configurations to populate new index maps
+                updateFilters(); 
+                
+                // 4. Return the user smoothly back to their unchanged design workbench
+                switchTab('studio');
             } else {
                 alert("Upload failed: " + data.error);
             }
@@ -830,6 +847,30 @@ function hideLoader() {
     const modal = document.getElementById('loadingModal');
     if (modal) {
         modal.style.display = 'none';
+    }
+}
+
+// --- SPA Tab Management Switcher ---
+function switchTab(targetTab) {
+    const studioDiv = document.getElementById('tabStudio');
+    const factoryDiv = document.getElementById('tabFactory');
+    const studioBtn = document.getElementById('tabBtnStudio');
+    const factoryBtn = document.getElementById('tabBtnFactory');
+
+    if (targetTab === 'studio') {
+        studioDiv.style.display = 'flex';
+        factoryDiv.style.display = 'none';
+        
+        // Visual indicator adjustments
+        studioBtn.style.backgroundColor = '#E88E57';
+        factoryBtn.style.backgroundColor = '#444';
+    } else if (targetTab === 'factory') {
+        studioDiv.style.display = 'none';
+        factoryDiv.style.display = 'flex';
+        
+        // Visual indicator adjustments
+        studioBtn.style.backgroundColor = '#444';
+        factoryBtn.style.backgroundColor = '#7289da';
     }
 }
 
