@@ -581,10 +581,13 @@ async function syncToVault(action, payload) {
 }
 
 async function saveCardToCloud() {
-    const cardName = document.getElementById('cardNameInput').value;
-    if (!cardName || cardName.trim() === "") return alert("Please enter a valid card name before saving.");
+    const cardTitle = document.getElementById('cardNameInput').value;
+    const cardIdentifier = document.getElementById('vaultCardName').value.trim();
 
-    showLoader(`Saving "${cardName}"...`);
+// Validate against the identifier, since that's what we use to look it up!
+    if (!cardIdentifier) return alert("Please ensure the Vault Identifier is not empty.");
+
+    showLoader(`Saving "${cardIdentifier}"...`);
     try {
         const uploadRes = await fetch('/api/upload', {
             method: 'POST',
@@ -597,7 +600,8 @@ async function saveCardToCloud() {
         const payload = {
             collectionName: 'warpforge_community_cards_v2',
             data: [{
-                card_title: cardName,
+                card_identifier: cardIdentifier,
+                card_title: cardTitle,
                 username: getAuth().user, 
                 art_url: uploadData.url,
                 frame_path: activeFramePath,
