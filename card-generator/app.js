@@ -159,8 +159,9 @@ function drawCard() {
         ctx.drawImage(frameImage, 0, 0, w, h);
     }
     
-    renderName(w, h);
-    renderRules(w, h);
+    // Capture the Y-offset from the name rendering because it's multiline
+    const nameOffset = renderName(w, h);
+    renderRules(w, h, nameOffset);
     renderRarity(w, h);
     renderStats(w, h);
 }
@@ -305,7 +306,7 @@ function renderRarity(w, h) {
     }
 }
 
-function renderRules(w, h) {
+function renderRules(w, h, nameOffset = 0) {
     const rules = document.getElementById('rulesInput').value;
     const cardType = document.getElementById('typeSelect').value;
     if (!rules) return;
@@ -318,7 +319,8 @@ function renderRules(w, h) {
 
     const lines = rules.split('\n');
     const lineHeight = 42; 
-    let y = cardType === 'stratagem' ? h * 0.72 : h * 0.63; 
+
+    let y = (cardType === 'stratagem' ? h * 0.72 : h * 0.63) + nameOffset; 
 
     ctx.fillStyle = "#e0e0e0"; 
     lines.forEach(line => {
@@ -361,7 +363,11 @@ function renderName(w, h) {
         nameY += lineHeight; // Move down for the next line
     });
 
-    ctx.shadowBlur = 0; 
+    ctx.shadowBlur = 0;
+
+    // Return the total extra pixels pushed down by the multiline title
+    // If 1 line = 0 extra pixels, if 2 lines = 55 extra pixels, etc.
+    return (lines.length > 1) ? (lines.length - 1) * lineHeight : 0;
 }
 
 // --- Safely Encapsulated Event Listeners ---
