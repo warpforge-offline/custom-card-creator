@@ -366,7 +366,7 @@ function renderName(w, h) {
     ctx.shadowBlur = 0;
 
     var nameOffsetOriginal = -lineHeight / 2;
-    var nameOffset = (lines.length > 1) ? (lines.length - 1) * lineHeight + nameOffsetOriginal : nameOffsetOriginal;
+    var nameOffset = (lines.length > 1) ? (lines.length - 1) * lineHeight + nameOffsetOriginal : 0;
 
     return nameOffset;
 }
