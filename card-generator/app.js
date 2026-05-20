@@ -626,7 +626,7 @@ async function saveCardToCloud() {
         hideLoader();
 
         if (result && result.code === 0) {
-            alert(`"${cardName}" has been successfully vaulted to the cloud!`);
+            alert(`"${cardIdentifier}" has been successfully vaulted to the cloud!`);
         } else {
             alert("Database accepted payload, but encountered an internal code mismatch.");
         }
