@@ -366,9 +366,9 @@ function renderName(w, h) {
     ctx.shadowBlur = 0;
 
     var nameOffsetOriginal = lineHeight / 2;
-    // Return the total extra pixels pushed down by the multiline title
-    // If 1 line = 0 extra pixels, if 2 lines = 55 extra pixels, etc.
-    return (lines.length > 1) ? (lines.length - 1) * lineHeight : nameOffsetOriginal;
+    var nameOffset = (lines.length > 1) ? (lines.length - 1) * lineHeight + nameOffsetOriginal : nameOffsetOriginal;
+
+    return nameOffset;
 }
 
 // --- Safely Encapsulated Event Listeners ---
