@@ -162,6 +162,9 @@ function drawCard() {
     // Capture the Y-offset from the name rendering because it's multiline
     const nameOffset = renderName(w, h);
     renderRules(w, h, nameOffset);
+    // Capture the Y-offset from the name rendering because it's multiline
+    const nameOffset = renderName(w, h);
+    renderRules(w, h, nameOffset);
     renderRarity(w, h);
     renderStats(w, h);
 }
@@ -307,6 +310,7 @@ function renderRarity(w, h) {
 }
 
 function renderRules(w, h, nameOffset = 0) {
+function renderRules(w, h, nameOffset = 0) {
     const rules = document.getElementById('rulesInput').value;
     const cardType = document.getElementById('typeSelect').value;
     if (!rules) return;
@@ -319,6 +323,8 @@ function renderRules(w, h, nameOffset = 0) {
 
     const lines = rules.split('\n');
     const lineHeight = 42; 
+
+    let y = (cardType === 'stratagem' ? h * 0.72 : h * 0.63) + nameOffset; 
 
     let y = (cardType === 'stratagem' ? h * 0.72 : h * 0.63) + nameOffset; 
 
@@ -339,6 +345,7 @@ function renderRules(w, h, nameOffset = 0) {
 function renderName(w, h) {
     const name = document.getElementById('cardNameInput').value;
     const cardType = document.getElementById('typeSelect').value; 
+    let nameY = cardType === 'stratagem' ? h * 0.67 : h * 0.58;
     let nameY = cardType === 'stratagem' ? h * 0.67 : h * 0.58;
     
     ctx.font = "700 50px 'Merriweather', serif"; 
@@ -404,7 +411,18 @@ function setupEventListeners() {
     const vaultNameInput = document.getElementById('vaultCardName'); 
 
     // 1-Way Sync: Multiline Name -> Single Line Identifier
+    // 1-Way Sync: Multiline Name -> Single Line Identifier
     mainNameInput?.addEventListener('input', (e) => {
+        if (vaultNameInput) {
+            // \s+ matches 1 or more whitespace characters (spaces, tabs, newlines)
+            // and collapses them into a single space.
+            vaultNameInput.value = e.target.value.replace(/\s+/g, ' ').trim();
+        }
+        drawCard();
+    });
+
+    // We completely REMOVED the reverse listener! 
+    // Now the user can type in the Vault Identifier box without affecting the canvas.
         if (vaultNameInput) {
             // \s+ matches 1 or more whitespace characters (spaces, tabs, newlines)
             // and collapses them into a single space.
@@ -590,7 +608,13 @@ async function syncToVault(action, payload) {
 async function saveCardToCloud() {
     const cardTitle = document.getElementById('cardNameInput').value;
     const cardIdentifier = document.getElementById('vaultCardName').value.trim();
+    const cardTitle = document.getElementById('cardNameInput').value;
+    const cardIdentifier = document.getElementById('vaultCardName').value.trim();
 
+// Validate against the identifier, since that's what we use to look it up!
+    if (!cardIdentifier) return alert("Please ensure the Vault Identifier is not empty.");
+
+    showLoader(`Saving "${cardIdentifier}"...`);
 // Validate against the identifier, since that's what we use to look it up!
     if (!cardIdentifier) return alert("Please ensure the Vault Identifier is not empty.");
 
@@ -600,13 +624,17 @@ async function saveCardToCloud() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image: currentRawArtBase64, cardName: cardIdentifier, auth: getAuth() })
+            body: JSON.stringify({ image: currentRawArtBase64, cardName: cardIdentifier, auth: getAuth() })
         });
         const uploadData = await uploadRes.json();
         if (uploadData.error) throw new Error(uploadData.error);
 
         const payload = {
             collectionName: 'warpforge_community_cards_v2',
+            collectionName: 'warpforge_community_cards_v2',
             data: [{
+                card_identifier: cardIdentifier,
+                card_title: cardTitle,
                 card_identifier: cardIdentifier,
                 card_title: cardTitle,
                 username: getAuth().user, 
@@ -633,6 +661,7 @@ async function saveCardToCloud() {
         hideLoader();
 
         if (result && result.code === 0) {
+            alert(`"${cardIdentifier}" has been successfully vaulted to the cloud!`);
             alert(`"${cardIdentifier}" has been successfully vaulted to the cloud!`);
         } else {
             alert("Database accepted payload, but encountered an internal code mismatch.");
@@ -706,9 +735,15 @@ async function loadCardFromCloud() {
     if (!searchIdentifier) return alert("Please enter a Vault Identifier to load.");
     
     showLoader(`Searching Vault for "${searchIdentifier}"...`);
+    const searchIdentifier = document.getElementById('vaultCardName').value.trim();
+    if (!searchIdentifier) return alert("Please enter a Vault Identifier to load.");
+    
+    showLoader(`Searching Vault for "${searchIdentifier}"...`);
     try {
         const currentUser = getAuth().user;
         const result = await syncToVault('load', {
+            collectionName: 'warpforge_community_cards_v2',
+            filter: `card_identifier == '${searchIdentifier}' && username == '${currentUser}'`,
             collectionName: 'warpforge_community_cards_v2',
             filter: `card_identifier == '${searchIdentifier}' && username == '${currentUser}'`,
             outputFields: ["*"]
@@ -719,6 +754,9 @@ async function loadCardFromCloud() {
 
             factionSelect.value = d.faction;
             typeSelect.value = d.type;
+
+            // Restore the raw multiline title back into the canvas textarea
+            document.getElementById('cardNameInput').value = d.card_title || searchIdentifier;
 
             // Restore the raw multiline title back into the canvas textarea
             document.getElementById('cardNameInput').value = d.card_title || searchIdentifier;
@@ -780,6 +818,7 @@ async function loadCardFromCloud() {
             }
             
             hideLoader();
+            alert(`Loaded "${searchIdentifier}" successfully.`);
             alert(`Loaded "${searchIdentifier}" successfully.`);
         } else {
             hideLoader();
