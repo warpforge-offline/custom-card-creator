@@ -779,7 +779,7 @@ async function loadCardFromCloud() {
             }
             
             hideLoader();
-            alert(`Loaded "${cardName}" successfully.`);
+            alert(`Loaded "${searchIdentifier}" successfully.`);
         } else {
             hideLoader();
             alert("Card not found in your private vault.");
