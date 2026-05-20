@@ -595,7 +595,7 @@ async function saveCardToCloud() {
         if (uploadData.error) throw new Error(uploadData.error);
 
         const payload = {
-            collectionName: 'warpforge_community_cards',
+            collectionName: 'warpforge_community_cards_v2',
             data: [{
                 card_title: cardName,
                 username: getAuth().user, 
@@ -698,7 +698,7 @@ async function loadCardFromCloud() {
     try {
         const currentUser = getAuth().user;
         const result = await syncToVault('load', {
-            collectionName: 'warpforge_community_cards',
+            collectionName: 'warpforge_community_cards_v2',
             filter: `card_identifier == '${searchIdentifier}' && username == '${currentUser}'`,
             outputFields: ["*"]
         });
