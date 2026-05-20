@@ -337,14 +337,30 @@ function renderRules(w, h) {
 function renderName(w, h) {
     const name = document.getElementById('cardNameInput').value;
     const cardType = document.getElementById('typeSelect').value; 
-    const nameY = cardType === 'stratagem' ? h * 0.67 : h * 0.58;
+    let nameY = cardType === 'stratagem' ? h * 0.67 : h * 0.58;
     
     ctx.font = "700 50px 'Merriweather', serif"; 
     ctx.textAlign = "center";
     ctx.fillStyle = "#E88E57"; 
     ctx.shadowBlur = 4;
     ctx.shadowColor = "rgba(0,0,0,0.8)"; 
-    ctx.fillText(name, w / 2, nameY);
+    
+    // Split the text by line breaks
+    const lines = name.split('\n');
+    const lineHeight = 55; // Spacing for a 50px font
+    
+    // Shift the starting Y position up slightly if there are multiple lines
+    // This ensures the block of text remains visually centered in its designated area
+    if (lines.length > 1) {
+        nameY -= ((lines.length - 1) * lineHeight) / 2;
+    }
+
+    // Draw each line
+    lines.forEach(line => {
+        ctx.fillText(line, w / 2, nameY);
+        nameY += lineHeight; // Move down for the next line
+    });
+
     ctx.shadowBlur = 0; 
 }
 
@@ -380,17 +396,18 @@ function setupEventListeners() {
     const mainNameInput = document.getElementById('cardNameInput');
     const vaultNameInput = document.getElementById('vaultCardName'); 
 
+    // 1-Way Sync: Multiline Name -> Single Line Identifier
     mainNameInput?.addEventListener('input', (e) => {
-        if (vaultNameInput) vaultNameInput.value = e.target.value;
+        if (vaultNameInput) {
+            // \s+ matches 1 or more whitespace characters (spaces, tabs, newlines)
+            // and collapses them into a single space.
+            vaultNameInput.value = e.target.value.replace(/\s+/g, ' ').trim();
+        }
         drawCard();
     });
 
-    if (vaultNameInput) {
-        vaultNameInput.addEventListener('input', (e) => {
-            if (mainNameInput) mainNameInput.value = e.target.value;
-            drawCard();
-        });
-    }
+    // We completely REMOVED the reverse listener! 
+    // Now the user can type in the Vault Identifier box without affecting the canvas.
 
     factionSelect?.addEventListener('change', () => updateFilters());
 
@@ -674,15 +691,15 @@ async function uploadCustomFrame(fileInputId) {
 }
 
 async function loadCardFromCloud() {
-    const cardName = document.getElementById('cardNameInput').value;
-    if (!cardName || cardName.trim() === "") return alert("Please enter a card name to load.");
-
-    showLoader(`Searching Vault for "${cardName}"...`);
+    const searchIdentifier = document.getElementById('vaultCardName').value.trim();
+    if (!searchIdentifier) return alert("Please enter a Vault Identifier to load.");
+    
+    showLoader(`Searching Vault for "${searchIdentifier}"...`);
     try {
         const currentUser = getAuth().user;
         const result = await syncToVault('load', {
             collectionName: 'warpforge_community_cards',
-            filter: `card_title == '${cardName}' && username == '${currentUser}'`,
+            filter: `card_identifier == '${searchIdentifier}' && username == '${currentUser}'`,
             outputFields: ["*"]
         });
 
@@ -691,6 +708,9 @@ async function loadCardFromCloud() {
 
             factionSelect.value = d.faction;
             typeSelect.value = d.type;
+
+            // Restore the raw multiline title back into the canvas textarea
+            document.getElementById('cardNameInput').value = d.card_title || searchIdentifier;
             document.getElementById('traitInput').value = d.trait;
             document.getElementById('rulesInput').value = d.rules;
             document.getElementById('stat1').value = d.stat_melee;
