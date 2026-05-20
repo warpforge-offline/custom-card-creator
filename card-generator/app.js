@@ -592,7 +592,7 @@ async function saveCardToCloud() {
         const uploadRes = await fetch('/api/upload', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: currentRawArtBase64, cardName: cardName, auth: getAuth() })
+            body: JSON.stringify({ image: currentRawArtBase64, cardName: cardIdentifier, auth: getAuth() })
         });
         const uploadData = await uploadRes.json();
         if (uploadData.error) throw new Error(uploadData.error);
