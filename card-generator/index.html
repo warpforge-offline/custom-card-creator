@@ -300,7 +300,7 @@
             </aside>
         </div>
 
-        <div id="tabSupport" class="tab-content" style="display: none; width: 100%; padding: 40px; box-sizing: border-box; max-width: 800px; margin: 0 auto;">
+        <div id="tabSupport" class="tab-content" style="display: none; width: 100%; padding: 40px; max-width: 800px; margin: 0 auto;">
             <h2 class="column-header">Support & Feedback</h2>
             <p class="help-text" style="margin-bottom: 30px; line-height: 1.6; color: #ccc;">
                 Use this section to report bugs, request new features, or share suggestions for the Warpforge Community Card Creator. 
@@ -308,18 +308,24 @@
                 You don't need a GitHub account to report problems; we handle the connection for you. 
                 Once submitted, anyone can navigate to the GitHub issues page to track the status, 
                 comment on progress, or see if others have already reported the same issue.
-            </p>
+            </p>       
 
-            <div id="issueForm" style="display:block; width: 100%;">
+            <div id="issueForm">
                 <div class="control-group" style="margin-bottom: 20px;">
                     <label>Title</label>
-                    <input type="text" id="issueTitle" placeholder="Short description of your issue" style="width: 100%; padding: 12px; font-size: 16px;">
+                    <input type="text" id="issueTitle" placeholder="Short description" style="width: 100%; padding: 12px;">
                 </div>
                 <div class="control-group" style="margin-bottom: 20px;">
                     <label>Description</label>
-                    <textarea id="issueBody" rows="10" placeholder="Please explain what happened..." style="width: 100%; padding: 12px; font-size: 16px;"></textarea>
+                    <textarea id="issueBody" rows="8" placeholder="Details..." style="width: 100%; padding: 12px;"></textarea>
                 </div>
-                <button onclick="submitGitHubIssue()" class="primary-btn" style="width: 100%; padding: 15px; font-size: 18px; background-color: #7289da;">Submit Issue to GitHub</button>
+                <button onclick="submitGitHubIssue()" class="primary-btn" style="width: 100%; padding: 15px; background-color: #7289da;">Submit Issue</button>
+            </div>
+            
+            <div class="auth-box" style="margin-bottom: 20px; padding: 15px; background: #2f3136; border-radius: 8px;">
+                <label>Vault Credentials</label>
+                <input type="text" id="supportUser" placeholder="Username">
+                <input type="password" id="supportPass" placeholder="Password">
             </div>
         </div>
     </div>

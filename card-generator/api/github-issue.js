@@ -1,5 +1,4 @@
-// api/github-issue.js
-import { Octokit } from "@octokit/rest";
+const { Octokit } = require("@octokit/rest");
 
 // Simple in-memory store for tracking IP request timestamps
 // Note: This resets every time the Vercel function cold-starts.

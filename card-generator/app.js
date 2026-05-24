@@ -911,24 +911,28 @@ function drawFactoryCanvas() {
 async function submitGitHubIssue() {
     const title = document.getElementById('issueTitle').value;
     const body = document.getElementById('issueBody').value;
-    const user = getAuth().user; // Reuse your existing getAuth function!
+    
+    // Grab from the support tab inputs specifically
+    const user = document.getElementById('supportUser').value.trim();
+    const pass = document.getElementById('supportPass').value.trim();
 
-    if (!title || !body) return alert("Please fill in title and description.");
+    if (!user || !pass) return alert("Please enter your Vault credentials.");
+    if (!title || !body) return alert("Please fill in the title and description.");
 
-    showLoader("Submitting issue / feature request to GitHub...");
+    showLoader("Submitting to GitHub...");
     
     const res = await fetch('/api/github-issue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, body, user })
+        body: JSON.stringify({ title, body, user, pass }) // Pass credentials to verify
     });
 
     const data = await res.json();
     hideLoader();
 
     if (data.success) {
-        alert("Issue opened successfully! You can track it here: " + data.url);
+        alert("Issue opened! Track it here: " + data.url);
     } else {
-        alert("Failed to open issue: " + data.error);
+        alert("Failed: " + (data.error || "Unknown error"));
     }
 }
