@@ -13,6 +13,7 @@
         <nav class="tab-navigation" style="display: flex; gap: 10px; margin-top: 10px; justify-content: center;">
             <button id="tabBtnStudio" onclick="switchTab('studio')" class="primary-btn" style="background-color: #7289da; font-weight: bold;">Card Studio</button>
             <button id="tabBtnFactory" onclick="switchTab('factory')" class="primary-btn" style="background-color: #444;">Frame Factory</button>
+            <button id="tabBtnSupport" onclick="switchTab('support')" class="primary-btn" style="background-color: #444;">Support</button>
         </nav>
     </header>
 
@@ -299,6 +300,22 @@
             </aside>
         </div>
 
+        <div id="tabSupport" class="tab-content" style="display: none; width: 100%; gap: 20px;">
+            <div id="issueForm" style="display:none;">
+                <h3>Report an Issue</h3>
+                <input type="text" id="issueTitle" placeholder="Title">
+                <textarea id="issueBody" placeholder="Describe the issue..."></textarea>
+                <button onclick="submitGitHubIssue()">Submit Issue / Feature Request</button>
+            </div>
+            <div class="auth-box">
+                <label>Credentials</label>
+                <input type="text" id="factoryUser" placeholder="Username" >
+                <input type="password" id="factoryPass" placeholder="Password">
+            </div>
+            <div class="button-row" style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="uploadCustomFrame('customFrameInput')" class="primary-btn" style="background-color: #7289da; width: 100%; margin-top: 15px; font-weight: bold;">Publish Frame Globally</button>
+            </div>
+        </div>
     </div>
     
     <!-- Loading Spinner-->

@@ -907,3 +907,28 @@ function drawFactoryCanvas() {
         factoryCtx.drawImage(factoryPreviewImage, 0, 0, factoryCanvas.width, factoryCanvas.height);
     }
 }
+
+async function submitGitHubIssue() {
+    const title = document.getElementById('issueTitle').value;
+    const body = document.getElementById('issueBody').value;
+    const user = getAuth().user; // Reuse your existing getAuth function!
+
+    if (!title || !body) return alert("Please fill in title and description.");
+
+    showLoader("Submitting issue / feature request to GitHub...");
+    
+    const res = await fetch('/api/github-issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, body, user })
+    });
+
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+        alert("Issue opened successfully! You can track it here: " + data.url);
+    } else {
+        alert("Failed to open issue: " + data.error);
+    }
+}
