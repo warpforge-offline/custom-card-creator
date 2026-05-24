@@ -33,8 +33,8 @@ export default async function handler(req, res) {
         const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
         const response = await octokit.issues.create({
-            owner: 'YOUR_ORG_NAME',  // <-- Replace with your GitHub Org/User
-            repo: 'YOUR_REPO_NAME',  // <-- Replace with your GitHub Repo Name
+            owner: 'warpforge-offline',
+            repo: 'custom-card-creator',
             title: title,
             body: `${body}\n\n---\nReported by: ${user} via Card Creator`
         });
