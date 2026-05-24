@@ -300,16 +300,26 @@
             </aside>
         </div>
 
-        <div id="tabSupport" class="tab-content" style="display: none; width: 100%; gap: 20px; padding: 20px;">
-            <div id="issueForm" style="display:none; width: 100%; max-width: 600px;">
-                <h3>Report an Issue / Feature Request</h3>
-                <div class="control-group">
-                    <input type="text" id="issueTitle" placeholder="Title">
+        <div id="tabSupport" class="tab-content" style="display: none; width: 100%; padding: 40px; box-sizing: border-box; max-width: 800px; margin: 0 auto;">
+            <h2 class="column-header">Support & Feedback</h2>
+            <p class="help-text" style="margin-bottom: 30px; line-height: 1.6; color: #ccc;">
+                Use this section to report bugs, request new features, or share suggestions for the Vault. 
+                When you submit an issue, our automated assistant opens a ticket in our public GitHub repository. 
+                You don't need a GitHub account to report problems; we handle the connection for you. 
+                Once submitted, anyone can navigate to the GitHub issues page to track the status, 
+                comment on progress, or see if others have already reported the same issue.
+            </p>
+
+            <div id="issueForm" style="display:block; width: 100%;">
+                <div class="control-group" style="margin-bottom: 20px;">
+                    <label>Title</label>
+                    <input type="text" id="issueTitle" placeholder="Short description of your issue" style="width: 100%; padding: 12px; font-size: 16px;">
                 </div>
-                <div class="control-group">
-                    <textarea id="issueBody" rows="6" placeholder="Describe the issue or feature request in detail..."></textarea>
+                <div class="control-group" style="margin-bottom: 20px;">
+                    <label>Description</label>
+                    <textarea id="issueBody" rows="10" placeholder="Please explain what happened..." style="width: 100%; padding: 12px; font-size: 16px;"></textarea>
                 </div>
-                <button onclick="submitGitHubIssue()" class="primary-btn" style="background-color: #7289da;">Submit to GitHub</button>
+                <button onclick="submitGitHubIssue()" class="primary-btn" style="width: 100%; padding: 15px; font-size: 18px; background-color: #7289da;">Submit Issue to GitHub</button>
             </div>
         </div>
     </div>
