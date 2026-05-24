@@ -841,19 +841,33 @@ function hideLoader() {
 function switchTab(targetTab) {
     const studioDiv = document.getElementById('tabStudio');
     const factoryDiv = document.getElementById('tabFactory');
+    const supportDiv = document.getElementById('tabSupport'); 
+
     const studioBtn = document.getElementById('tabBtnStudio');
     const factoryBtn = document.getElementById('tabBtnFactory');
+    const supportBtn = document.getElementById('tabBtnSupport'); 
 
+    // Default: Hide all tabs
+    studioDiv.style.display = 'none';
+    factoryDiv.style.display = 'none';
+    supportDiv.style.display = 'none';
+
+    // Default: Set all buttons to inactive
+    [studioBtn, factoryBtn, supportBtn].forEach(btn => {
+        if (btn) btn.style.backgroundColor = '#444';
+    });
+
+    // Show the targeted tab and highlight its button
     if (targetTab === 'studio') {
         studioDiv.style.display = 'flex';
-        factoryDiv.style.display = 'none';
         studioBtn.style.backgroundColor = '#7289da';
-        factoryBtn.style.backgroundColor = '#444';
     } else if (targetTab === 'factory') {
-        studioDiv.style.display = 'none';
         factoryDiv.style.display = 'flex';
-        studioBtn.style.backgroundColor = '#444';
         factoryBtn.style.backgroundColor = '#7289da';
+    } else if (targetTab === 'support') {
+        supportDiv.style.display = 'flex'; 
+        
+        supportBtn.style.backgroundColor = '#7289da';
     }
 }
 
@@ -905,5 +919,34 @@ function drawFactoryCanvas() {
     
     if (factoryPreviewImage.complete && factoryPreviewImage.naturalWidth !== 0) {
         factoryCtx.drawImage(factoryPreviewImage, 0, 0, factoryCanvas.width, factoryCanvas.height);
+    }
+}
+
+async function submitGitHubIssue() {
+    const title = document.getElementById('issueTitle').value;
+    const body = document.getElementById('issueBody').value;
+    
+    // Grab from the support tab inputs specifically
+    const user = document.getElementById('supportUser').value.trim();
+    const pass = document.getElementById('supportPass').value.trim();
+
+    if (!user || !pass) return alert("Please enter your Vault credentials.");
+    if (!title || !body) return alert("Please fill in the title and description.");
+
+    showLoader("Submitting to GitHub...");
+    
+    const res = await fetch('/api/github-issue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, body, user, pass }) // Pass credentials to verify
+    });
+
+    const data = await res.json();
+    hideLoader();
+
+    if (data.success) {
+        alert("Issue opened! Track it here: " + data.url);
+    } else {
+        alert("Failed: " + (data.error || "Unknown error"));
     }
 }
