@@ -300,20 +300,16 @@
             </aside>
         </div>
 
-        <div id="tabSupport" class="tab-content" style="display: none; width: 100%; gap: 20px;">
-            <div id="issueForm" style="display:none;">
-                <h3>Report an Issue</h3>
-                <input type="text" id="issueTitle" placeholder="Title">
-                <textarea id="issueBody" placeholder="Describe the issue..."></textarea>
-                <button onclick="submitGitHubIssue()">Submit Issue / Feature Request</button>
-            </div>
-            <div class="auth-box">
-                <label>Credentials</label>
-                <input type="text" id="factoryUser" placeholder="Username" >
-                <input type="password" id="factoryPass" placeholder="Password">
-            </div>
-            <div class="button-row" style="display: flex; gap: 10px; margin-top: 10px;">
-                <button onclick="uploadCustomFrame('customFrameInput')" class="primary-btn" style="background-color: #7289da; width: 100%; margin-top: 15px; font-weight: bold;">Publish Frame Globally</button>
+        <div id="tabSupport" class="tab-content" style="display: none; width: 100%; gap: 20px; padding: 20px;">
+            <div id="issueForm" style="display:none; width: 100%; max-width: 600px;">
+                <h3>Report an Issue / Feature Request</h3>
+                <div class="control-group">
+                    <input type="text" id="issueTitle" placeholder="Title">
+                </div>
+                <div class="control-group">
+                    <textarea id="issueBody" rows="6" placeholder="Describe the issue or feature request in detail..."></textarea>
+                </div>
+                <button onclick="submitGitHubIssue()" class="primary-btn" style="background-color: #7289da;">Submit to GitHub</button>
             </div>
         </div>
     </div>

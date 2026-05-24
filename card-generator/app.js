@@ -841,19 +841,34 @@ function hideLoader() {
 function switchTab(targetTab) {
     const studioDiv = document.getElementById('tabStudio');
     const factoryDiv = document.getElementById('tabFactory');
+    const supportDiv = document.getElementById('tabSupport'); // Get the new tab
+
     const studioBtn = document.getElementById('tabBtnStudio');
     const factoryBtn = document.getElementById('tabBtnFactory');
+    const supportBtn = document.getElementById('tabBtnSupport'); // Get the new button
 
+    // Default: Hide all tabs
+    studioDiv.style.display = 'none';
+    factoryDiv.style.display = 'none';
+    supportDiv.style.display = 'none';
+
+    // Default: Set all buttons to inactive
+    [studioBtn, factoryBtn, supportBtn].forEach(btn => {
+        if (btn) btn.style.backgroundColor = '#444';
+    });
+
+    // Show the targeted tab and highlight its button
     if (targetTab === 'studio') {
         studioDiv.style.display = 'flex';
-        factoryDiv.style.display = 'none';
         studioBtn.style.backgroundColor = '#7289da';
-        factoryBtn.style.backgroundColor = '#444';
     } else if (targetTab === 'factory') {
-        studioDiv.style.display = 'none';
         factoryDiv.style.display = 'flex';
-        studioBtn.style.backgroundColor = '#444';
         factoryBtn.style.backgroundColor = '#7289da';
+    } else if (targetTab === 'support') {
+        supportDiv.style.display = 'flex';
+        supportBtn.style.backgroundColor = '#7289da';
+        // Ensure the issue form is visible within the support tab
+        document.getElementById('issueForm').style.display = 'block';
     }
 }
 
