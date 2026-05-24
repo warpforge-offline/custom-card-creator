@@ -300,31 +300,41 @@
             </aside>
         </div>
 
-        <div id="tabSupport" class="tab-content" style="display: none; width: 100%; padding: 40px; max-width: 800px; margin: 0 auto;">
-            <h2 class="column-header">Support & Feedback</h2>
-            <p class="help-text" style="margin-bottom: 30px; line-height: 1.6; color: #ccc;">
-                Use this section to report bugs, request new features, or share suggestions for the Warpforge Community Card Creator. 
-                When you submit an issue, our automated assistant opens a ticket in our public GitHub repository. 
-                You don't need a GitHub account to report problems; we handle the connection for you. 
-                Once submitted, anyone can navigate to the <a href="https://github.com/warpforge-offline/custom-card-creator/issues">Warpforge Card Creator GitHub issues page</a> to track the status, 
-                comment on progress, or see if others have already reported the same issue.
-            </p>       
-            <div id="issueForm">
-                <div class="control-group" style="margin-bottom: 20px;">
-                    <label>Title</label>
-                    <input type="text" id="issueTitle" placeholder="Short description" style="width: 100%; padding: 12px;">
-                </div>
-                <div class="control-group" style="margin-bottom: 20px;">
-                    <label>Description</label>
-                    <textarea id="issueBody" rows="8" placeholder="Details..." style="width: 100%; padding: 12px;"></textarea>
-                </div>
+<div id="tabSupport" class="tab-content" style="display: none; width: 100%; gap: 20px;">
+            <aside class="sidebar">
+                <h2 class="column-header">Authentication</h2>
+                <p class="help-text" style="margin-bottom: 20px;">Please verify your identity to submit a ticket to the public repository.</p>
+                
                 <div class="auth-box" style="margin-bottom: 20px; padding: 15px; background: #2f3136; border-radius: 8px;">
-                    <label>Credentials</label>
-                    <input type="text" id="supportUser" placeholder="Username">
+                    <label>Vault Credentials</label>
+                    <input type="text" id="supportUser" placeholder="Username" style="margin-bottom: 10px;">
                     <input type="password" id="supportPass" placeholder="Password">
                 </div>
-                <button onclick="submitGitHubIssue()" class="primary-btn" style="width: 100%; padding: 15px; background-color: #7289da;">Submit Issue</button>
-            </div>
+                
+                <button onclick="submitGitHubIssue()" class="primary-btn" style="width: 100%; padding: 15px; font-size: 16px; background-color: #7289da;">Submit Issue</button>
+            </aside>
+
+            <main class="editor-view" style="align-items: flex-start; padding-right: 40px; overflow-y: auto;">
+                <h2 class="column-header" style="width: 100%;">Support & Feedback</h2>
+                <p class="help-text" style="margin-bottom: 30px; line-height: 1.6; color: #ccc; font-size: 15px; max-width: 900px;">
+                    Use this section to report bugs, request new features, or share suggestions for the Warpforge Community Card Creator. 
+                    When you submit an issue, our automated assistant opens a ticket in our public GitHub repository. 
+                    You don't need a GitHub account to report problems; we handle the connection for you. 
+                    Once submitted, anyone can navigate to the <a href="https://github.com/warpforge-offline/custom-card-creator/issues" target="_blank" style="color: #7289da;">Warpforge Card Creator GitHub issues page</a> to track the status, 
+                    comment on progress, or see if others have already reported the same issue.
+                </p>       
+                
+                <div id="issueForm" style="width: 100%; max-width: 900px;">
+                    <div class="control-group" style="margin-bottom: 20px;">
+                        <label>Title</label>
+                        <input type="text" id="issueTitle" placeholder="Short description of the issue or feature" style="width: 100%; padding: 12px; font-size: 16px; box-sizing: border-box; background: #23272a;">
+                    </div>
+                    <div class="control-group" style="margin-bottom: 20px;">
+                        <label>Description</label>
+                        <textarea id="issueBody" rows="14" placeholder="Please describe the details here..." style="width: 100%; padding: 12px; font-size: 16px; box-sizing: border-box; background: #23272a; resize: vertical; color: white; border: 1px solid #444; border-radius: 4px;"></textarea>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
     
