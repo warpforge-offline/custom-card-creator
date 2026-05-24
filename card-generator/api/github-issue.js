@@ -4,11 +4,17 @@ const requestLog = new Map();
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send();
 
+    const { title, body, user, pass } = req.body;
+
+    // 1. ZILLIZ AUTHENTICATION CHECK (The Gatekeeper)
+    if (!user || !pass || !(await verifyUser(user, pass))) {
+        return res.status(401).json({ error: 'Unauthorized. Invalid Vault credentials.' });
+    }
+
+    // 2. RATE LIMITING
     const clientIp = req.headers['x-forwarded-for'] || 'unknown';
     const now = Date.now();
-    
-    // Rate limit: Max 5 requests per hour (3,600,000 ms)
-    const windowMs = 3600000;
+    const windowMs = 3600000; // 1 Hour
     const maxRequests = 5;
 
     const userHistory = requestLog.get(clientIp) || [];
@@ -21,26 +27,54 @@ export default async function handler(req, res) {
     recentRequests.push(now);
     requestLog.set(clientIp, recentRequests);
 
-    // --- Proceed with GitHub Issue creation ---
-    const { title, body, user } = req.body;
-    
+    // 3. GITHUB API EXECUTION
     try {
-        // THE FIX: Dynamically import Octokit inside the function execution
         const { Octokit } = await import("@octokit/rest");
-        
         const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
         const response = await octokit.issues.create({
-            owner: 'warpforge-offline',  // <-- Make sure to replace this!
-            repo: 'custom-card-creator',  // <-- Make sure to replace this!
+            owner: 'YOUR_ORG_NAME',  // <-- Replace with your GitHub Org/User
+            repo: 'YOUR_REPO_NAME',  // <-- Replace with your GitHub Repo Name
             title: title,
             body: `${body}\n\n---\nReported by: ${user} via Card Creator`
         });
 
         res.status(200).json({ success: true, url: response.data.html_url });
     } catch (error) {
-        // Log the error to your Vercel console so you can read it if it fails
         console.error("GitHub API Error:", error); 
         res.status(500).json({ error: error.message });
+    }
+}
+
+// --- Zilliz Verification Function ---
+async function verifyUser(username, password) {
+    const ZILLIZ_ENDPOINT = process.env.ZILLIZ_ENDPOINT;
+    const ZILLIZ_TOKEN = process.env.ZILLIZ_TOKEN;
+
+    // Failsafe in case environment variables are missing on Vercel
+    if (!ZILLIZ_ENDPOINT || !ZILLIZ_TOKEN) {
+        console.error("Missing Zilliz environment variables!");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${ZILLIZ_ENDPOINT.replace(/\/$/, "")}/v2/vectordb/entities/query`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${ZILLIZ_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                collectionName: 'users',
+                filter: `username == '${username}' && password == '${password}'`,
+                outputFields: ["username"]
+            })
+        });
+
+        const result = await response.json();
+        return result.data && result.data.length > 0;
+    } catch (err) {
+        console.error("Zilliz Verification Error:", err);
+        return false;
     }
 }
