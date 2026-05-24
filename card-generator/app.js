@@ -839,21 +839,35 @@ function hideLoader() {
 }
 
 function switchTab(targetTab) {
-    const tabs = ['tabStudio', 'tabFactory', 'tabSupport'];
-    const buttons = ['tabBtnStudio', 'tabBtnFactory', 'tabBtnSupport'];
+    const studioDiv = document.getElementById('tabStudio');
+    const factoryDiv = document.getElementById('tabFactory');
+    const supportDiv = document.getElementById('tabSupport'); 
 
-    tabs.forEach(id => document.getElementById(id).style.display = 'none');
-    buttons.forEach(id => document.getElementById(id).style.backgroundColor = '#444');
+    const studioBtn = document.getElementById('tabBtnStudio');
+    const factoryBtn = document.getElementById('tabBtnFactory');
+    const supportBtn = document.getElementById('tabBtnSupport'); 
 
+    // Default: Hide all tabs
+    studioDiv.style.display = 'none';
+    factoryDiv.style.display = 'none';
+    supportDiv.style.display = 'none';
+
+    // Default: Set all buttons to inactive
+    [studioBtn, factoryBtn, supportBtn].forEach(btn => {
+        if (btn) btn.style.backgroundColor = '#444';
+    });
+
+    // Show the targeted tab and highlight its button
     if (targetTab === 'studio') {
-        document.getElementById('tabStudio').style.display = 'flex';
-        document.getElementById('tabBtnStudio').style.backgroundColor = '#7289da';
+        studioDiv.style.display = 'flex';
+        studioBtn.style.backgroundColor = '#7289da';
     } else if (targetTab === 'factory') {
-        document.getElementById('tabFactory').style.display = 'flex';
-        document.getElementById('tabBtnFactory').style.backgroundColor = '#7289da';
+        factoryDiv.style.display = 'flex';
+        factoryBtn.style.backgroundColor = '#7289da';
     } else if (targetTab === 'support') {
-        document.getElementById('tabSupport').style.display = 'block'; // Changed to block for flow
-        document.getElementById('tabBtnSupport').style.backgroundColor = '#7289da';
+        supportDiv.style.display = 'flex'; 
+        
+        supportBtn.style.backgroundColor = '#7289da';
     }
 }
 

@@ -305,10 +305,10 @@
                 <h2 class="column-header">Authentication</h2>
                 <p class="help-text" style="margin-bottom: 20px;">Please verify your identity to submit a ticket to the public repository.</p>
                 
-                <div class="auth-box" style="margin-bottom: 20px; padding: 15px; background: #2f3136; border-radius: 8px;">
-                    <label>Vault Credentials</label>
-                    <input type="text" id="supportUser" placeholder="Username" style="margin-bottom: 10px;">
-                    <input type="password" id="supportPass" placeholder="Password">
+                <div class="auth-box">
+                    <label>Credentials</label>
+                    <input type="text" id="vaultUser" placeholder="Username">
+                    <input type="password" id="vaultPass" placeholder="Password">
                 </div>
                 
                 <button onclick="submitGitHubIssue()" class="primary-btn" style="width: 100%; padding: 15px; font-size: 16px; background-color: #7289da;">Submit Issue</button>
